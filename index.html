@@ -250,7 +250,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.2';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.3';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -454,7 +454,7 @@ async function fileToJpegBase64(file, max=1600){
 }
 const RECOGNIZE_PROMPT = `You are an expert Pokémon TCG card identifier. Look at the photo and list EVERY Pokémon trading card visible (there may be 1 to 12 cards, e.g. a binder page). For each card read the text printed on it.
 Return ONLY a JSON array, one object per card, in reading order (left→right, top→bottom):
-{"name": card name exactly as printed (English if English card), "number": the COLLECTOR number printed in small text at the bottom edge of the card, the part before the slash in "025/198" (keep leading zeros). NEVER use the National Pokédex number (printed as "No. 383" or "NO. 006" near the Pokémon info line) - that is not the collector number. Read the collector number digit by digit and double-check it; it is tiny text at the bottom-left (Sword & Shield era) or bottom-left corner (Scarlet & Violet era). If the collector number is not readable, set number to null. Also read the card NAME exactly as printed in the title bar, including the suffix: V, VMAX, VSTAR, ex, GX, V-UNION. Distinguish carefully: "VMAX" and "VSTAR" cards have that word after the name and usually HP 230+; a plain "V" card has just the letter V, "total": the number after the slash if present (e.g. 198) else null, "set_code": the 3-letter set abbreviation printed in the bottom-left corner next to the set symbol if visible (e.g. "SVI","PAF","MEW","OBF","PGO","SIT","FST"), else null. It is NEVER the single regulation-mark letter (D, E, F, G, H, I) printed in a small box - ignore that letter, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "language": ISO code of the card language, "confidence": 0-1}
+{"name": card name exactly as printed (English if English card), "number": the COLLECTOR number printed in small text at the bottom edge of the card, the part before the slash in "025/198" (keep leading zeros). NEVER use the National Pokédex number (printed as "No. 383" or "NO. 006" near the Pokémon info line) - that is not the collector number. Read the collector number digit by digit and double-check it; it is tiny text at the bottom-left (Sword & Shield era) or bottom-left corner (Scarlet & Violet era). If the collector number is not readable, set number to null. Also read the card NAME exactly as printed in the title bar, including the suffix: V, VMAX, VSTAR, ex, GX, V-UNION. Distinguish carefully: "VMAX" and "VSTAR" cards have that word after the name and usually HP 230+; a plain "V" card has just the letter V, "total": the number after the slash if present (e.g. 198) else null, "set_code": the 3-letter set abbreviation printed in the bottom-left corner next to the set symbol if visible (e.g. "SVI","PAF","MEW","OBF","PGO","SIT","FST"), else null. It is NEVER the single regulation-mark letter (D, E, F, G, H, I) printed in a small box - ignore that letter, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "anniversary_25": true if the gold "25" Pokémon 25th-anniversary logo is printed on the card (Celebrations 2021 reprints of classic cards carry it, usually near the artwork or bottom), "stamp": any other special stamp text visible (e.g. "Pokémon GO", "Prerelease", "Staff", "Cosmos") else null, "language": ISO code of the card language, "confidence": 0-1}
 If no card is visible return []. Output the JSON array only, no prose, no markdown fences.`;
 function parseCardsJson(txt, who){
   txt = String(txt||'').replace(/```json|```/g,'').trim(); const m = txt.match(/\[[\s\S]*\]/);
@@ -498,20 +498,22 @@ async function matchCard(det){
   let sets = [];
   if(det.set_code && String(det.set_code).trim().length>=2) sets = await setByCode(det.set_code);
   if(!sets.length && det.total){ sets = S.sets.filter(s=>s.cardCount?.official===det.total || s.cardCount?.total===det.total); if(sets.length>8) sets=[]; }
+  if(det.anniversary_25){ ['cel25cc','cel25'].forEach(id=>{ const st=S.setMap[id]; if(st && !sets.some(x=>x.id===id)) sets=[st, ...sets]; }); }
   const cands = []; const seen = new Set();
   const push = (card, set, score) => { if(seen.has(card.id)) { const c=cands.find(x=>x.card.id===card.id); if(c && score>c.score) c.score=score; return; } seen.add(card.id); cands.push({card, set, score}); };
   for(const s of sets){
     let d; try{ d = await loadSet(s.id); }catch(e){ continue; }
     // a) karty se shodným JMÉNEM v sadě (jméno má přednost před číslem)
-    d.cards.forEach(c => { const ns = nmScore(c.name); if(ns >= 0.8){ const dist = num ? Math.abs((parseInt(c.localId)||0)-(parseInt(num)||-99)) : 99; push(c, s, 1.0 + (normNum(c.localId)===num ? 0.5 : (dist<=8 ? 0.25*(1-dist/9) : 0))); } });
+    const bonus = det.anniversary_25 ? (s.id==='cel25cc'||s.id==='cel25' ? 1.0 : -0.6) : 0;   // logo 25. výročí = Celebrations
+    d.cards.forEach(c => { const ns = nmScore(c.name); if(ns >= 0.8){ const dist = num ? Math.abs((parseInt(c.localId)||0)-(parseInt(num)||-99)) : 99; push(c, s, ns + bonus + (normNum(c.localId)===num ? 0.5 : (dist<=8 ? 0.25*(1-dist/9) : 0))); } });
     // b) karta podle ČÍSLA – jen jako slabší kandidát, když jméno nesedí
-    if(num){ const byNum = d.cards.find(c=>normNum(c.localId)===num); if(byNum) push(byNum, s, nmScore(byNum.name) >= 0.8 ? 1.5 : 0.4); }
+    if(num){ const byNum = d.cards.find(c=>normNum(c.localId)===num); if(byNum) push(byNum, s, (nmScore(byNum.name) >= 0.8 ? 1.5 : 0.4) + bonus); }
   }
   // 2) když nic jistého, celokatalogové hledání podle jména
   if(!cands.some(c=>c.score >= 1.0) && baseName){
     try{ const r = await searchCards(baseName, null);
       r.forEach(c => { const sid=c.id.split('-')[0]; const st=S.setMap[sid]; const ns=nmScore(c.name);
-        const sc = ns*0.9 + (num && normNum(c.localId)===num ? 0.3 : 0) + (det.total && st && (st.cardCount?.official===det.total||st.cardCount?.total===det.total) ? 0.25 : 0);
+        const sc = ns*0.9 + (num && normNum(c.localId)===num ? 0.3 : 0) + (det.total && st && (st.cardCount?.official===det.total||st.cardCount?.total===det.total) ? 0.25 : 0) + (det.anniversary_25 ? (sid==='cel25cc'||sid==='cel25' ? 0.6 : -0.3) : 0);
         push(c, st||{id:sid,name:sid}, sc); });
     }catch(e){}
   }
@@ -559,12 +561,12 @@ function renderScanRows(){
       <div class="top">
         <div class="pics">
           <div><img src="${r.photo||''}" alt=""><div class="cap">tvoje fotka</div></div>
-          ${c?`<div><img src="${img(c.image,'high')}" onerror="this.style.visibility='hidden'"><div class="cap">v katalogu</div></div>`:''}
+          ${c?`<div>${c.image?`<img src="${img(c.image,'high')}" onerror="this.style.visibility='hidden'">`:`<div class="noimg" style="width:150px;height:210px">bez obrázku<br>v katalogu</div>`}<div class="cap">v katalogu</div></div>`:''}
         </div>
         <div class="grow">
           <div class="row"><input type="checkbox" data-a="sel" ${r.sel?'checked':''} style="width:auto"> <span class="t">${c?esc(c.name):esc(r.det.name||'Neznámá karta')}</span></div>
           <div class="small muted">${c?`${esc(s?.name||s?.id)} · ${esc(c.localId)}/${S.setMap[s?.id]?.cardCount?.official||'?'}`:''}</div>
-          <div class="small muted" style="opacity:.7">Přečteno${r.smart?' (Opus)':''}: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}</div>
+          <div class="small muted" style="opacity:.7">Přečteno${r.smart?' (Opus)':''}: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}${r.det.anniversary_25?' · logo 25th':''}${r.det.stamp?' · '+esc(r.det.stamp):''}</div>
           ${c?`<div class="price" style="text-align:left">${p!=null?fmtKc(p)+' <span class="muted small">'+fmtEur(p)+'</span>':'<span class="small" style="color:var(--warn);font-weight:400">bez tržní ceny – po přidání doplň vlastní cenu v detailu karty</span>'}</div>`:`<div class="small" style="color:var(--warn)">Nenalezeno v databázi – vyber z návrhů nebo hledej ručně.</div>`}
         </div>
         <button class="btn small ghost" data-a="del">✕</button>
