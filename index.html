@@ -92,7 +92,7 @@ a{color:var(--accent2)}
 </head>
 <body>
 <header>
-  <div><h1 id="title">Pokémoni</h1><div class="sub" id="subtitle">naše sbírka</div></div>
+  <div><h1 id="title">Pokémoni</h1><div class="sub" id="subtitle">naše sbírka · v<span id="ver"></span></div></div>
   <div id="hdrRight" class="small muted"></div>
 </header>
 <main>
@@ -223,7 +223,7 @@ a{color:var(--accent2)}
   <button class="btn ghost" id="btnClearCache">Vymazat mezipaměť sad a cen</button>
   <div style="height:12px"></div>
   <button class="btn ghost" id="btnLogout">Odhlásit</button>
-  <div class="small muted" style="margin-top:16px">Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Claude Haiku nebo Google Gemini. Databáze: Supabase.</div>
+  <div class="small muted" style="margin-top:16px">Verze appky <b id="ver2"></b>. Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Claude Haiku nebo Google Gemini. Databáze: Supabase.</div>
 </section>
 </main>
 
@@ -240,6 +240,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
+const APP_VERSION = '1.5';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -713,7 +714,7 @@ $('btnClearCache').onclick=()=>{ cache.clearPrefix('set_'); cache.clearPrefix('c
 $('btnLogout').onclick=()=>{ localStorage.removeItem('pk_pin'); S.pin=''; pinBuf=''; $('dots').textContent=''; showView('login'); };
 
 /* ===================== START ===================== */
-renderPinpad();
+renderPinpad(); $('ver').textContent=APP_VERSION; $('ver2').textContent=APP_VERSION;
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(S.pin) login(S.pin); else showView('login');
 </script>
