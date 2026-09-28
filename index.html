@@ -441,7 +441,7 @@ async function fileToJpegBase64(file, max=1600){
 }
 const RECOGNIZE_PROMPT = `You are an expert Pokémon TCG card identifier. Look at the photo and list EVERY Pokémon trading card visible (there may be 1 to 12 cards, e.g. a binder page). For each card read the text printed on it.
 Return ONLY a JSON array, one object per card, in reading order (left→right, top→bottom):
-{"name": card name exactly as printed (English if English card), "number": collector number as printed before the slash (keep leading zeros, e.g. "025"), "total": the number after the slash if present (e.g. 198) else null, "set_code": the 2-4 letter set abbreviation printed in the bottom corner if visible (e.g. "SVI","PAF","MEW","OBF"), else null, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "language": ISO code of the card language, "confidence": 0-1}
+{"name": card name exactly as printed (English if English card), "number": the COLLECTOR number printed in small text at the bottom edge of the card, the part before the slash in "025/198" (keep leading zeros). NEVER use the National Pokédex number (printed as "No. 383" or "NO. 006" near the Pokémon info line) - that is not the collector number. If the collector number is not readable, set number to null, "total": the number after the slash if present (e.g. 198) else null, "set_code": the 2-4 letter set abbreviation printed in the bottom corner if visible (e.g. "SVI","PAF","MEW","OBF"), else null, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "language": ISO code of the card language, "confidence": 0-1}
 If no card is visible return []. Output the JSON array only, no prose, no markdown fences.`;
 function parseCardsJson(txt, who){
   txt = String(txt||'').replace(/```json|```/g,'').trim(); const m = txt.match(/\[[\s\S]*\]/);
@@ -475,7 +475,13 @@ async function matchCard(det){
   const tryCards = async (sets) => { for(const s of sets){ try{ const d=await loadSet(s.id); const c=d.cards.find(x=>normNum(x.localId)===num); if(c) cands.push({card:c,set:s,score:nameMatch(det.name,c.name)+ (det.total && (S.setMap[s.id]?.cardCount?.official===det.total)?0.5:0)}); }catch(e){} } };
   if(det.set_code) await tryCards(await setByCode(det.set_code));
   if(!cands.length && det.total){ const sets = S.sets.filter(s=>s.cardCount?.official===det.total || s.cardCount?.total===det.total); if(sets.length<=8) await tryCards(sets); }
-  if(!cands.length && det.name){ try{ const r = await searchCards(det.name.split(/\s+(ex|gx|v|vmax|vstar)$/i)[0], num||null); r.forEach(c=>{ const sid=c.id.split('-')[0]; cands.push({card:c,set:S.setMap[sid]||{id:sid,name:sid},score:nameMatch(det.name,c.name)}); }); }catch(e){} }
+  const baseName = (det.name||'').split(/\s+(ex|gx|v|vmax|vstar)$/i)[0];
+  if(!cands.length && det.name && num){ try{ const r = await searchCards(baseName, num); r.forEach(c=>{ const sid=c.id.split('-')[0]; cands.push({card:c,set:S.setMap[sid]||{id:sid,name:sid},score:nameMatch(det.name,c.name)}); }); }catch(e){} }
+  if(!cands.length && det.name){ // číslo nesedí → nabídnout všechny karty stejného jména jako návrhy
+    try{ const r = await searchCards(baseName, null); r.forEach(c=>{ const sid=c.id.split('-')[0]; const st=S.setMap[sid]; cands.push({card:c,set:st||{id:sid,name:sid},score:0.3*nameMatch(det.name,c.name),idx:st?S.sets.indexOf(st):-1}); }); }catch(e){}
+    cands.sort((a,b)=>b.score-a.score || b.idx-a.idx); // nejnovější sady první
+    return {match:null, alternatives:cands.slice(0,12)};
+  }
   cands.sort((a,b)=>b.score-a.score);
   const best = cands[0]; if(!best || best.score<0.5) return {match:null, alternatives:cands.slice(0,6)};
   return {match:best, alternatives:cands.slice(1,6)};
@@ -627,7 +633,7 @@ $('setSearch').oninput = ()=>{ const q=normName($('setSearch').value); if(q.leng
 function setRow(s){ const own=ownedMap(s.id); const n=Object.keys(own).filter(k=>+k<= (s.cardCount?.official||9999) || isNaN(+k)).length; const tot=s.cardCount?.official||s.cardCount?.total||0; const val=S.cards.filter(c=>c.set_id===s.id).reduce((a,c)=>a+(cardValue(c)||0),0);
   return `<div class="set" data-id="${s.id}"><img src="${s.logo?s.logo+'.webp':''}" onerror="this.style.visibility='hidden'"><div class="grow"><div class="t" style="font-weight:600">${esc(s.name)}</div><div class="small muted">${n}/${tot} karet${s.cardCount?.total>tot?` (+${s.cardCount.total-tot} secret)`:''} · ${fmtKc(val)}</div><div class="bar" style="margin-top:4px"><i style="width:${tot?Math.min(100,n/tot*100):0}%"></i></div></div><span class="muted">›</span></div>`; }
 function renderSets(){
-  const ids=[...new Set(S.cards.map(c=>c.set_id))]; const sets=ids.map(id=>S.setMap[id]).filter(Boolean).sort((a,b)=>(b.releaseDate||'').localeCompare(a.releaseDate||'')||a.name.localeCompare(b.name));
+  const ids=[...new Set(S.cards.map(c=>c.set_id))]; const sets=ids.map(id=>S.setMap[id]).filter(Boolean).sort((a,b)=>S.sets.indexOf(b)-S.sets.indexOf(a)); // nejnovější první
   $('setsList').innerHTML = sets.length ? sets.map(setRow).join('') : 'Zatím žádná sada. Přidej první kartu nebo najdi sadu nahoře.';
 }
 document.getElementById('v-sets').addEventListener('click', e=>{ const s=e.target.closest('.set'); if(s) openSetDetail(s.dataset.id); });
