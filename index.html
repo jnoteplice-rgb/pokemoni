@@ -250,7 +250,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.5';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.6';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -272,7 +272,10 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtKc = eur => eur == null ? '–' : Math.round(eur*S.rate).toLocaleString('cs-CZ') + ' Kč';
 const fmtEur = eur => eur == null ? '' : eur.toLocaleString('cs-CZ',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
-const img = (base, size='low') => base ? `${base}/${size}.webp` : '';
+// Obrázky, které TCGdex nemá (Celebrations Classic Collection) – bereme z pokemontcg.io
+const IMG_OVERRIDE = (()=>{ const m={CC001:'2_A',CC002:'4_A',CC003:'15_A',CC004:'73_A',CC005:'8_A',CC006:'15_B',CC007:'15_C',CC008:'24_A',CC009:'20_A',CC010:'66_A',CC011:'9_A',CC012:'86_A',CC013:'88_A',CC014:'93_A',CC015:'17_A',CC016:'15_D',CC017:'109_A',CC018:'145_A',CC019:'107_A',CC020:'113_A',CC021:'114_A',CC022:'54_A',CC023:'97_A',CC024:'76_A',CC025:'60_A'}; const o={}; for(const k in m) o['cel25cc-'+k]='https://images.pokemontcg.io/cel25c/'+m[k]; return o; })();
+const fixImage = c => { if(c && !c.image && IMG_OVERRIDE[c.id]) c.image = IMG_OVERRIDE[c.id]; return c; };
+const img = (base, size='low') => !base ? '' : base.startsWith('https://images.pokemontcg.io/') ? (size==='high' ? base+'_hires.png' : base+'.png') : `${base}/${size}.webp`;
 const normNum = n => String(n ?? '').trim().replace(/^0+(?=\d)/,'').toUpperCase();
 function toast(m, ms=2500){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); }
 function openSheet(html){ $('sheetBox').innerHTML=html; $('sheet').classList.add('open'); }
@@ -307,6 +310,7 @@ async function loadSet(id){
   if(S.setCards[id]) return S.setCards[id];
   let d = cache.get('set_'+id);
   if(!d){ d = await tj(`${TCGDEX}/${S.lang}/sets/${id}`); cache.set('set_'+id, d, SET_TTL); }
+  d.cards.forEach(fixImage);
   d.cards.sort((a,b)=> (parseInt(a.localId)||9999) - (parseInt(b.localId)||9999) || a.localId.localeCompare(b.localId));
   S.setCards[id] = d; return d;
 }
@@ -314,7 +318,7 @@ async function loadCard(id, force=false){
   if(!force && S.cardDetail[id]) return S.cardDetail[id];
   let d = force ? null : cache.get('card_'+id);
   if(!d){ d = await tj(`${TCGDEX}/${S.lang}/cards/${id}`); cache.set('card_'+id, d, PRICE_TTL); }
-  S.cardDetail[id] = d; return d;
+  fixImage(d); S.cardDetail[id] = d; return d;
 }
 async function setByCode(code){
   if(!code) return [];
@@ -329,7 +333,7 @@ async function searchCards(name, num){
     const q2 = new URLSearchParams(); if(name) q2.set('name','like:'+name); q2.set('localId', normNum(num).padStart(3,'0'));
     r = await tj(`${TCGDEX}/${S.lang}/cards?${q2}`);
   }
-  return r.slice(0,150);
+  return r.slice(0,150).map(fixImage);
 }
 
 /* ---- ceny ---- */
