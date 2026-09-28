@@ -79,11 +79,20 @@ label.f{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px}
 @keyframes s{to{transform:rotate(360deg)}}
 canvas.chart{width:100%;height:140px;display:block}
 .thumbs{display:flex;gap:6px;overflow:auto;margin:10px 0}
-.thumbs img{height:70px;border-radius:6px}
+.thumbs img{height:130px;border-radius:8px}
 .res{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
 .res.bad{border-color:var(--warn)}
 .res .top{display:flex;gap:10px;align-items:flex-start}
-.res .top img{width:60px;height:84px;object-fit:cover;border-radius:6px;background:var(--line)}
+.res .top img{width:150px;height:210px;object-fit:cover;border-radius:8px;background:var(--line)}
+.res .pics{display:flex;gap:8px;flex:none}
+.res .pics .cap{font-size:11px;color:var(--muted);text-align:center;margin-top:3px}
+.alts{display:flex;gap:10px;overflow-x:auto;padding:8px 2px 4px;margin-top:8px;-webkit-overflow-scrolling:touch}
+.alt{flex:none;width:120px;border:2px solid var(--line);border-radius:10px;padding:5px;cursor:pointer;background:var(--bg)}
+.alt.on{border-color:var(--accent);background:var(--card)}
+.alt img{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:6px;display:block;background:var(--line)}
+.alt .n{font-size:12px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alt .s{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){.res .top img{width:110px;height:154px}}
 .res select,.res input{padding:7px 8px;font-size:13px}
 .sel{display:grid;grid-template-columns:1fr 1fr 60px;gap:6px;margin-top:8px}
 a{color:var(--accent2)}
@@ -240,7 +249,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '1.5';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '1.6';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -508,7 +517,7 @@ async function handleFiles(files){
       for(const det of dets){
         $('scanProg').innerHTML=`<span class="spin"></span> Fotka ${i+1}/${arr.length}: hledám „${esc(det.name||'?')} ${esc(det.number||'')}“…`;
         const m = await matchCard(det); let detail=null; if(m.match){ try{ detail=await loadCard(m.match.card.id);}catch(e){} }
-        S.scanRows.push({det, match:m.match, alts:m.alternatives, detail, variant: defaultVariant(det, detail), qty:1, owner:$('bulkOwner').value, cond:$('bulkCond').value, sel: !!m.match});
+        S.scanRows.push({det, photo:url, match:m.match, alts:m.alternatives, detail, variant: defaultVariant(det, detail), qty:1, owner:$('bulkOwner').value, cond:$('bulkCond').value, sel: !!m.match});
         renderScanRows();
       }
     }catch(e){ toast(e.message, 5000); }
@@ -523,15 +532,18 @@ function renderScanRows(){
     const vopts = [['normal','Normal'],['holo','Holo'],['reverse','Reverse holo'],['firstEdition','1st Edition']].filter(([k])=> !r.detail || v[k]).map(([k,l])=>`<option value="${k}" ${r.variant===k?'selected':''}>${l}</option>`).join('');
     return `<div class="res ${c?'':'bad'}" data-i="${i}">
       <div class="top">
-        <img src="${c?img(c.image):''}" onerror="this.style.visibility='hidden'">
+        <div class="pics">
+          <div><img src="${r.photo||''}" alt=""><div class="cap">tvoje fotka</div></div>
+          ${c?`<div><img src="${img(c.image,'high')}" onerror="this.style.visibility='hidden'"><div class="cap">v katalogu</div></div>`:''}
+        </div>
         <div class="grow">
           <div class="row"><input type="checkbox" data-a="sel" ${r.sel?'checked':''} style="width:auto"> <span class="t">${c?esc(c.name):esc(r.det.name||'Neznámá karta')}</span></div>
           <div class="small muted">${c?`${esc(s?.name||s?.id)} · ${esc(c.localId)}/${S.setMap[s?.id]?.cardCount?.official||'?'}`:`Přečteno: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}`}</div>
           ${c?`<div class="price" style="text-align:left">${fmtKc(p)} <span class="muted small">${fmtEur(p)}</span></div>`:`<div class="small" style="color:var(--warn)">Nenalezeno v databázi – vyber z návrhů nebo hledej ručně.</div>`}
-          ${r.alts?.length?`<select data-a="alt" style="margin-top:6px"><option value="">${c?'Jiná karta se stejným číslem…':'Vyber správnou kartu…'}</option>${r.alts.map((a,j)=>`<option value="${j}">${esc(a.card.name)} – ${esc(a.set?.name||a.set?.id)} ${esc(a.card.localId)}</option>`).join('')}</select>`:''}
         </div>
         <button class="btn small ghost" data-a="del">✕</button>
       </div>
+      ${r.alts?.length?`<div class="small muted" style="margin-top:8px">${c?'Není to ona? Klepni na správnou kartu:':'Vyber správnou kartu:'}</div><div class="alts">${(c?[r.match]:[]).concat(r.alts).map((a,j)=>`<div class="alt ${a===r.match?'on':''}" data-a="altpick" data-j="${j}"><img src="${img(a.card.image)}" loading="lazy"><div class="n">${esc(a.card.name)}</div><div class="s">${esc(a.set?.name||a.set?.id)} · ${esc(a.card.localId)}</div></div>`).join('')}</div>`:''}
       ${c?`<div class="sel">
         <select data-a="owner">${S.owners.map(o=>`<option ${r.owner===o?'selected':''}>${esc(o)}</option>`).join('')}</select>
         <select data-a="variant">${vopts}</select>
@@ -542,10 +554,14 @@ function renderScanRows(){
 $('scanResults').addEventListener('change', async e=>{
   const el=e.target; const i=+el.closest('.res').dataset.i; const r=S.scanRows[i]; const a=el.dataset.a;
   if(a==='sel') r.sel=el.checked; if(a==='owner') r.owner=el.value; if(a==='variant') r.variant=el.value; if(a==='qty') r.qty=Math.max(1,+el.value||1);
-  if(a==='alt' && el.value!==''){ const alt=r.alts[+el.value]; const old=r.match; r.match=alt; r.alts=[...(old?[old]:[]), ...r.alts.filter(x=>x!==alt)]; try{ r.detail=await loadCard(alt.card.id);}catch(e){} r.variant=defaultVariant(r.det,r.detail); r.sel=true; renderScanRows(); }
-  else if(a==='variant') renderScanRows();
+  if(a==='variant') renderScanRows();
 });
-$('scanResults').addEventListener('click', e=>{ const b=e.target.closest('button[data-a=del]'); if(b){ S.scanRows.splice(+b.closest('.res').dataset.i,1); renderScanRows(); } });
+$('scanResults').addEventListener('click', async e=>{
+  const b=e.target.closest('button[data-a=del]'); if(b){ S.scanRows.splice(+b.closest('.res').dataset.i,1); renderScanRows(); return; }
+  const a=e.target.closest('.alt[data-a=altpick]'); if(!a) return;
+  const r=S.scanRows[+a.closest('.res').dataset.i]; const list=(r.match?[r.match]:[]).concat(r.alts); const pick=list[+a.dataset.j]; if(!pick||pick===r.match) return;
+  r.match=pick; r.alts=list.filter(x=>x!==pick); try{ r.detail=await loadCard(pick.card.id);}catch(e){} r.variant=defaultVariant(r.det,r.detail); r.sel=true; renderScanRows();
+});
 $('bulkOwner').onchange = e => { S.scanRows.forEach(r=>r.owner=e.target.value); renderScanRows(); };
 $('bulkCond').onchange = e => { S.scanRows.forEach(r=>r.cond=e.target.value); };
 $('btnAddAll').onclick = async ()=>{
