@@ -90,6 +90,7 @@ canvas.chart{width:100%;height:140px;display:block}
 .alt{flex:none;width:120px;border:2px solid var(--line);border-radius:10px;padding:5px;cursor:pointer;background:var(--bg)}
 .alt.on{border-color:var(--accent);background:var(--card)}
 .alt img{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:6px;display:block;background:var(--line)}
+.noimg{width:100%;aspect-ratio:63/88;border-radius:6px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
 .alt .n{font-size:12px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .alt .s{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:480px){.res .top img{width:110px;height:154px}}
@@ -249,12 +250,13 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '1.7';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.0';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const CLAUDE_MODEL = 'claude-haiku-4-5';
+const CLAUDE_SMART = 'claude-sonnet-4-5';   // chytřejší model na vyžádání
 const PRICE_TTL = 20*3600*1000;   // ceny čerstvé 20 h
 const SET_TTL   = 7*24*3600*1000; // seznam karet sady 7 dní
 
@@ -327,7 +329,7 @@ async function searchCards(name, num){
     const q2 = new URLSearchParams(); if(name) q2.set('name','like:'+name); q2.set('localId', normNum(num).padStart(3,'0'));
     r = await tj(`${TCGDEX}/${S.lang}/cards?${q2}`);
   }
-  return r.slice(0,40);
+  return r.slice(0,150);
 }
 
 /* ---- ceny ---- */
@@ -451,7 +453,7 @@ async function fileToJpegBase64(file, max=1600){
 }
 const RECOGNIZE_PROMPT = `You are an expert Pokémon TCG card identifier. Look at the photo and list EVERY Pokémon trading card visible (there may be 1 to 12 cards, e.g. a binder page). For each card read the text printed on it.
 Return ONLY a JSON array, one object per card, in reading order (left→right, top→bottom):
-{"name": card name exactly as printed (English if English card), "number": the COLLECTOR number printed in small text at the bottom edge of the card, the part before the slash in "025/198" (keep leading zeros). NEVER use the National Pokédex number (printed as "No. 383" or "NO. 006" near the Pokémon info line) - that is not the collector number. Read the collector number digit by digit and double-check it; it is tiny text at the bottom-left (Sword & Shield era) or bottom-left corner (Scarlet & Violet era). If the collector number is not readable, set number to null. Also read the card NAME exactly, including suffixes like V, VMAX, VSTAR, ex, GX, "total": the number after the slash if present (e.g. 198) else null, "set_code": the 2-4 letter set abbreviation printed in the bottom corner if visible (e.g. "SVI","PAF","MEW","OBF"), else null, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "language": ISO code of the card language, "confidence": 0-1}
+{"name": card name exactly as printed (English if English card), "number": the COLLECTOR number printed in small text at the bottom edge of the card, the part before the slash in "025/198" (keep leading zeros). NEVER use the National Pokédex number (printed as "No. 383" or "NO. 006" near the Pokémon info line) - that is not the collector number. Read the collector number digit by digit and double-check it; it is tiny text at the bottom-left (Sword & Shield era) or bottom-left corner (Scarlet & Violet era). If the collector number is not readable, set number to null. Also read the card NAME exactly as printed in the title bar, including the suffix: V, VMAX, VSTAR, ex, GX, V-UNION. Distinguish carefully: "VMAX" and "VSTAR" cards have that word after the name and usually HP 230+; a plain "V" card has just the letter V, "total": the number after the slash if present (e.g. 198) else null, "set_code": the 3-letter set abbreviation printed in the bottom-left corner next to the set symbol if visible (e.g. "SVI","PAF","MEW","OBF","PGO","SIT","FST"), else null. It is NEVER the single regulation-mark letter (D, E, F, G, H, I) printed in a small box - ignore that letter, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "language": ISO code of the card language, "confidence": 0-1}
 If no card is visible return []. Output the JSON array only, no prose, no markdown fences.`;
 function parseCardsJson(txt, who){
   txt = String(txt||'').replace(/```json|```/g,'').trim(); const m = txt.match(/\[[\s\S]*\]/);
@@ -465,9 +467,9 @@ async function geminiRecognize(b64){
   if(!r.ok){ const t=await r.text(); throw new Error('Gemini '+r.status+': '+t.slice(0,200)); }
   const j = await r.json(); return parseCardsJson(j.candidates?.[0]?.content?.parts?.map(p=>p.text).join(''), 'Gemini');
 }
-async function claudeRecognize(b64){
+async function claudeRecognize(b64, model=CLAUDE_MODEL){
   const key = S.settings.claude_key; if(!key) throw new Error('Chybí Claude API klíč (Nastavení).');
-  const body = { model: CLAUDE_MODEL, max_tokens: 2000, temperature: 0,
+  const body = { model, max_tokens: 2000, temperature: 0,
     messages:[
       {role:'user', content:[{type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}}, {type:'text', text:RECOGNIZE_PROMPT}]},
       {role:'assistant', content:'['}   // prefill: odpověď začne rovnou JSON polem
@@ -477,15 +479,23 @@ async function claudeRecognize(b64){
   const j = await r.json(); const txt = '[' + (j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
   return parseCardsJson(txt, 'Claude');
 }
-async function recognize(b64){ return (S.settings.ai_provider||'claude')==='gemini' ? geminiRecognize(b64) : claudeRecognize(b64); }
+async function recognize(b64, smart=false){ if(smart) return claudeRecognize(b64, CLAUDE_SMART); return (S.settings.ai_provider||'claude')==='gemini' ? geminiRecognize(b64) : claudeRecognize(b64); }
 const normName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
-function nameMatch(a,b){ a=normName(a); b=normName(b); if(!a||!b) return 0; if(a===b) return 1; if(a.includes(b)||b.includes(a)) return .8; return 0; }
+const SUFFIX_RE = /\s+(vstar|vmax|v-union|v|ex|gx|tag team|prism star|lv\.?\s*x|δ|star)\s*$/i;
+function splitName(n){ n=String(n||'').trim(); const m=n.match(SUFFIX_RE); return {base: normName(m ? n.slice(0,m.index) : n), suf: m ? normName(m[1]) : ''}; }
+function nameMatch(a,b){
+  const A=splitName(a), B=splitName(b); if(!A.base||!B.base) return 0;
+  if(A.base===B.base) return A.suf===B.suf ? 1 : 0.5;          // stejné jméno, jiná přípona (Charizard vs Charizard VSTAR) = slabá shoda
+  if(A.base.includes(B.base)||B.base.includes(A.base)) return A.suf===B.suf ? 0.8 : 0.4;
+  return 0;
+}
 async function matchCard(det){
+  det = {...det, total: parseInt(det.total)||null, number: det.number==null?null:String(det.number)};
   const num = normNum(det.number); const nm = det.name||''; const baseName = nm.split(/\s+(ex|gx|v|vmax|vstar)$/i)[0];
-  const nmScore = (cardName) => Math.max(nameMatch(nm, cardName), nameMatch(baseName, cardName)*0.9);
+  const nmScore = (cardName) => Math.max(nameMatch(nm, cardName), nameMatch(baseName, cardName)*0.6);
   // 1) kandidátní sady: podle kódu sady, jinak podle celkového počtu za lomítkem
   let sets = [];
-  if(det.set_code) sets = await setByCode(det.set_code);
+  if(det.set_code && String(det.set_code).trim().length>=2) sets = await setByCode(det.set_code);
   if(!sets.length && det.total){ sets = S.sets.filter(s=>s.cardCount?.official===det.total || s.cardCount?.total===det.total); if(sets.length>8) sets=[]; }
   const cands = []; const seen = new Set();
   const push = (card, set, score) => { if(seen.has(card.id)) { const c=cands.find(x=>x.card.id===card.id); if(c && score>c.score) c.score=score; return; } seen.add(card.id); cands.push({card, set, score}); };
@@ -552,12 +562,17 @@ function renderScanRows(){
         </div>
         <div class="grow">
           <div class="row"><input type="checkbox" data-a="sel" ${r.sel?'checked':''} style="width:auto"> <span class="t">${c?esc(c.name):esc(r.det.name||'Neznámá karta')}</span></div>
-          <div class="small muted">${c?`${esc(s?.name||s?.id)} · ${esc(c.localId)}/${S.setMap[s?.id]?.cardCount?.official||'?'}`:`Přečteno: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}`}</div>
+          <div class="small muted">${c?`${esc(s?.name||s?.id)} · ${esc(c.localId)}/${S.setMap[s?.id]?.cardCount?.official||'?'}`:''}</div>
+          <div class="small muted" style="opacity:.7">Přečteno${r.smart?' (Sonnet)':''}: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}</div>
           ${c?`<div class="price" style="text-align:left">${fmtKc(p)} <span class="muted small">${fmtEur(p)}</span></div>`:`<div class="small" style="color:var(--warn)">Nenalezeno v databázi – vyber z návrhů nebo hledej ručně.</div>`}
         </div>
         <button class="btn small ghost" data-a="del">✕</button>
       </div>
-      ${r.alts?.length?`<div class="small muted" style="margin-top:8px">${c?'Není to ona? Klepni na správnou kartu:':'Vyber správnou kartu:'}</div><div class="alts">${(c?[r.match]:[]).concat(r.alts).map((a,j)=>`<div class="alt ${a===r.match?'on':''}" data-a="altpick" data-j="${j}"><img src="${img(a.card.image)}" loading="lazy"><div class="n">${esc(a.card.name)}</div><div class="s">${esc(a.set?.name||a.set?.id)} · ${esc(a.card.localId)}</div></div>`).join('')}</div>`:''}
+      <div class="row wrap" style="margin-top:8px;gap:6px">
+        ${r.altsFull?'':`<button class="btn small ghost" data-a="more">🔎 Další možnosti</button>`}
+        <button class="btn small ghost" data-a="smart" ${r.busy?'disabled':''}>${r.busy?'<span class="spin"></span> čtu…':'🧠 Přečíst znovu chytřejším modelem'}</button>
+      </div>
+      ${r.alts?.length?`<div class="small muted" style="margin-top:8px">${c?'Není to ona? Klepni na správnou kartu:':'Vyber správnou kartu:'}</div><div class="alts">${(c?[r.match]:[]).concat(r.alts).map((a,j)=>`<div class="alt ${a===r.match?'on':''}" data-a="altpick" data-j="${j}">${a.card.image?`<img src="${img(a.card.image)}" loading="lazy">`:`<div class="noimg">bez obrázku</div>`}<div class="n">${esc(a.card.name)}</div><div class="s">${esc(a.set?.name||a.set?.id)} · ${esc(a.card.localId)}</div></div>`).join('')}</div>`:''}
       ${c?`<div class="sel">
         <select data-a="owner">${S.owners.map(o=>`<option ${r.owner===o?'selected':''}>${esc(o)}</option>`).join('')}</select>
         <select data-a="variant">${vopts}</select>
@@ -572,6 +587,15 @@ $('scanResults').addEventListener('change', async e=>{
 });
 $('scanResults').addEventListener('click', async e=>{
   const b=e.target.closest('button[data-a=del]'); if(b){ S.scanRows.splice(+b.closest('.res').dataset.i,1); renderScanRows(); return; }
+  const more=e.target.closest('button[data-a=more]'); if(more){ const r=S.scanRows[+more.closest('.res').dataset.i]; more.innerHTML='<span class="spin"></span>'; try{ const base=(r.det.name||'').split(/\s+(vstar|vmax|v|ex|gx)$/i)[0]; const all=await searchCards(base, null); const have=new Set((r.match?[r.match.card.id]:[]));
+      const list=all.filter(c=>!have.has(c.id)).map(c=>{ const sid=c.id.split('-')[0]; const st=S.setMap[sid]; return {card:c,set:st||{id:sid,name:sid},score:nameMatch(r.det.name,c.name),idx:S.sets.indexOf(st)}; }).sort((x,y)=>y.score-x.score||y.idx-x.idx);
+      r.alts=list; r.altsFull=true; }catch(err){ toast(err.message); } renderScanRows(); return; }
+  const sm=e.target.closest('button[data-a=smart]'); if(sm){ const r=S.scanRows[+sm.closest('.res').dataset.i]; if(!r.photo) return toast('Chybí fotka'); r.busy=true; renderScanRows();
+    try{ const b64=r.photo.split(',')[1]; const dets=await recognize(b64, true); if(!dets.length) throw new Error('Chytřejší model na fotce kartu nenašel');
+      const det = dets.find(d=>nameMatch(d.name, r.det.name)>=0.5) || dets[0]; const m=await matchCard(det);
+      r.det=det; r.match=m.match; r.alts=m.alternatives; r.altsFull=false; r.detail=null; if(m.match){ try{ r.detail=await loadCard(m.match.card.id);}catch(e){} } r.variant=defaultVariant(det,r.detail); r.sel=!!m.match; r.smart=true;
+      toast(m.match?`Sonnet: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} → ${m.match.card.name} (${m.match.set?.name})`:`Sonnet přečetl: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} – vyber z nabídky`, 5000);
+    }catch(err){ toast(err.message, 5000); } r.busy=false; renderScanRows(); return; }
   const a=e.target.closest('.alt[data-a=altpick]'); if(!a) return;
   const r=S.scanRows[+a.closest('.res').dataset.i]; const list=(r.match?[r.match]:[]).concat(r.alts); const pick=list[+a.dataset.j]; if(!pick||pick===r.match) return;
   r.match=pick; r.alts=list.filter(x=>x!==pick); try{ r.detail=await loadCard(pick.card.id);}catch(e){} r.variant=defaultVariant(r.det,r.detail); r.sel=true; renderScanRows();
