@@ -253,7 +253,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.7';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.8';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -482,7 +482,7 @@ async function geminiRecognize(b64){
 }
 async function claudeRecognize(b64, model=CLAUDE_MODEL){
   const key = S.settings.claude_key; if(!key) throw new Error('Chybí Claude API klíč (Nastavení).');
-  const body = { model, max_tokens: 2000, temperature: 0,
+  const body = { model, max_tokens: 2000,
     messages:[
       {role:'user', content:[{type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}}, {type:'text', text:RECOGNIZE_PROMPT}]},
       {role:'assistant', content:'['}   // prefill: odpověď začne rovnou JSON polem
@@ -494,8 +494,8 @@ async function claudeRecognize(b64, model=CLAUDE_MODEL){
 }
 async function askAnniversary(b64, cardName){
   const key=S.settings.claude_key; if(!key) return null;
-  const q = `Look at the Pokémon card "${cardName}" in this photo. Celebrations (2021) Classic Collection reprints carry a small gold/yellow 25th-anniversary logo: a stylised "25" with a Pikachu silhouette, printed in the lower part of the card (near the bottom edge, next to the set symbol / copyright line, or at the lower right of the artwork). The original 1999-2012 printing does NOT have it. Does this card have that gold "25" logo? Answer with exactly one word: YES or NO.`;
-  const body={model:CLAUDE_MODEL,max_tokens:5,temperature:0,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:q}]}]};
+  const q = `Look at the Pokémon card "${cardName}" in this photo. Celebrations (2021) Classic Collection reprints carry a small gold/yellow 25th-anniversary logo: a stylised "25" with a Pikachu silhouette, printed in the lower part of the card (near the bottom edge, next to the set symbol / copyright line, or at the lower right of the artwork). The original 1999-2012 printing does NOT have it. Look carefully at the whole card, including small details near the bottom edge and in the corners of the artwork. Does this card have that gold/yellow "25" anniversary logo anywhere? Answer with exactly one word: YES or NO.`;
+  const body={model:CLAUDE_MODEL,max_tokens:5,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:q}]}]};
   try{ const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:Object.assign({'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, S.settings.claude_workspace?{'anthropic-workspace-id':S.settings.claude_workspace.trim()}:{}),body:JSON.stringify(body)});
     if(!r.ok) return null; const j=await r.json(); const t=(j.content||[]).map(c=>c.text||'').join('').trim().toUpperCase(); return t.startsWith('YES') ? true : t.startsWith('NO') ? false : null; }catch(e){ return null; }
 }
