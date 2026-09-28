@@ -130,6 +130,9 @@ a{color:var(--accent2)}
     <div class="prog" id="scanProg"></div>
     <div class="thumbs" id="thumbs"></div>
   </div>
+  <div class="card" id="pendingBox" style="display:none">
+    <div class="row"><div class="grow"><b>⏳ K vyřešení: <span id="pendingCount">0</span></b><div class="small muted">Karty odložené na později.</div></div><button class="btn small secondary" id="btnLoadPending">Načíst do seznamu</button></div>
+  </div>
   <div id="scanResults"></div>
   <div id="scanActions" class="hidden">
     <div class="card">
@@ -250,7 +253,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.6';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.7';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -275,7 +278,7 @@ const fmtEur = eur => eur == null ? '' : eur.toLocaleString('cs-CZ',{minimumFrac
 // Obrázky, které TCGdex nemá (Celebrations Classic Collection) – bereme z pokemontcg.io
 const IMG_OVERRIDE = (()=>{ const m={CC001:'2_A',CC002:'4_A',CC003:'15_A',CC004:'73_A',CC005:'8_A',CC006:'15_B',CC007:'15_C',CC008:'24_A',CC009:'20_A',CC010:'66_A',CC011:'9_A',CC012:'86_A',CC013:'88_A',CC014:'93_A',CC015:'17_A',CC016:'15_D',CC017:'109_A',CC018:'145_A',CC019:'107_A',CC020:'113_A',CC021:'114_A',CC022:'54_A',CC023:'97_A',CC024:'76_A',CC025:'60_A'}; const o={}; for(const k in m) o['cel25cc-'+k]='https://images.pokemontcg.io/cel25c/'+m[k]; return o; })();
 const fixImage = c => { if(c && !c.image && IMG_OVERRIDE[c.id]) c.image = IMG_OVERRIDE[c.id]; return c; };
-const img = (base, size='low') => !base ? '' : base.startsWith('https://images.pokemontcg.io/') ? (size==='high' ? base+'_hires.png' : base+'.png') : `${base}/${size}.webp`;
+const img = (base, size='low') => !base ? '' : base.startsWith('data:') ? base : base.startsWith('https://images.pokemontcg.io/') ? (size==='high' ? base+'_hires.png' : base+'.png') : `${base}/${size}.webp`;
 const normNum = n => String(n ?? '').trim().replace(/^0+(?=\d)/,'').toUpperCase();
 function toast(m, ms=2500){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); }
 function openSheet(html){ $('sheetBox').innerHTML=html; $('sheet').classList.add('open'); }
@@ -368,7 +371,7 @@ async function fetchPrices(ids, onProgress, force=false){
   return rows;
 }
 async function refreshCollectionPrices(force=false){
-  const ids = [...new Set([...S.cards.map(c=>c.card_id), ...S.wishlist.map(w=>w.card_id)])];
+  const ids = [...new Set([...S.cards.map(c=>c.card_id), ...S.wishlist.map(w=>w.card_id)])].filter(id=>!id.startsWith('custom:'));
   if(!ids.length){ $('priceInfo').textContent='Ve sbírce ještě nic není.'; return; }
   $('hdrRight').innerHTML = '<span class="spin"></span>';
   const rows = await fetchPrices(ids, (d,t)=>{ $('priceInfo').textContent=`Aktualizuji ceny… ${d}/${t}`; }, force);
@@ -419,11 +422,11 @@ async function boot(){
   $('hdrRight').innerHTML='<span class="spin"></span>';
   try{
     const [all] = await Promise.all([rpc('pk_get_all',{}), loadSets()]);
-    S.cards = all.cards||[]; S.wishlist = all.wishlist||[]; S.history = all.history||[];
+    S.cards = all.cards||[]; S.wishlist = all.wishlist||[]; S.history = all.history||[]; S.pendingCount = all.pending||0;
     S.prices = {}; (all.prices||[]).forEach(p=>S.prices[p.card_id+'|'+p.variant]=p);
   }catch(e){ toast('Načtení selhalo: '+e.message, 5000); }
   $('hdrRight').textContent='';
-  fillOwnerSelects(); renderAll(); updatePriceInfo();
+  fillOwnerSelects(); renderAll(); updatePriceInfo(); renderPending();
   const last = +localStorage.getItem('pk_lastRefresh');
   if(navigator.onLine && Date.now()-last > PRICE_TTL && S.cards.length) refreshCollectionPrices();
 }
@@ -447,6 +450,11 @@ function renderAll(){ renderCollection(); renderSets(); renderDash(); }
 /* ===================== SKENOVÁNÍ ===================== */
 $('fCam').onchange = e => handleFiles(e.target.files);
 $('fGal').onchange = e => handleFiles(e.target.files);
+async function makeThumb(dataUrl, max=520){
+  try{ const im = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+    const sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)); const c=document.createElement('canvas'); c.width=Math.round(im.naturalWidth*sc); c.height=Math.round(im.naturalHeight*sc);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height); return c.toDataURL('image/jpeg',0.8); }catch(e){ return dataUrl; }
+}
 async function fileToJpegBase64(file, max=1600){
   const bmp = await createImageBitmap(file).catch(()=>null);
   let w,h,src;
@@ -509,7 +517,7 @@ async function smartModel(){
   return CLAUDE_MODEL;
 }
 async function recognize(b64, smart=false){ if(smart){ const m=await smartModel(); if(m===CLAUDE_MODEL) toast('Opus není k dispozici, čtu znovu Sonnetem'); return claudeRecognize(b64, m); } return (S.settings.ai_provider||'claude')==='gemini' ? geminiRecognize(b64) : claudeRecognize(b64); }
-const normName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+const normName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\p{L}\p{N}]/gu,'');
 const SUFFIX_RE = /\s+(vstar|vmax|v-union|v|ex|gx|tag team|prism star|lv\.?\s*x|δ|star)\s*$/i;
 function splitName(n){ n=String(n||'').trim(); const m=n.match(SUFFIX_RE); return {base: normName(m ? n.slice(0,m.index) : n), suf: m ? normName(m[1]) : ''}; }
 function nameMatch(a,b){
@@ -574,7 +582,7 @@ async function handleFiles(files){
       for(const det of dets){
         $('scanProg').innerHTML=`<span class="spin"></span> Fotka ${i+1}/${arr.length}: hledám „${esc(det.name||'?')} ${esc(det.number||'')}“…`;
         let m = await matchCard(det); m = await verifyAnniversary(m, det, b64); let detail=null; if(m.match){ try{ detail=await loadCard(m.match.card.id);}catch(e){} }
-        S.scanRows.push({det, photo:url, match:m.match, alts:m.alternatives, detail, variant: defaultVariant(det, detail), qty:1, owner:$('bulkOwner').value, cond:$('bulkCond').value, sel: !!m.match});
+        S.scanRows.push({det, photo:url, thumb: await makeThumb(url, 520), match:m.match, alts:m.alternatives, detail, variant: defaultVariant(det, detail), qty:1, owner:$('bulkOwner').value, cond:$('bulkCond').value, sel: !!m.match});
         renderScanRows();
       }
     }catch(e){ toast(e.message, 5000); }
@@ -604,6 +612,8 @@ function renderScanRows(){
       <div class="row wrap" style="margin-top:8px;gap:6px">
         ${r.altsFull?'':`<button class="btn small ghost" data-a="more">🔎 Další možnosti</button>`}
         <button class="btn small ghost" data-a="smart" ${r.busy?'disabled':''}>${r.busy?'<span class="spin"></span> čtu…':'🧠 Přečíst znovu nejsilnějším modelem (Opus)'}</button>
+        ${r.pendingId?'':`<button class="btn small ghost" data-a="later">⏳ Přiřadit později</button>`}
+        <button class="btn small ghost" data-a="custom">✏️ Přidat jako vlastní kartu</button>
       </div>
       ${r.alts?.length?`<div class="small muted" style="margin-top:8px">${c?'Není to ona? Klepni na správnou kartu:':'Vyber správnou kartu:'}</div><div class="alts">${(c?[r.match]:[]).concat(r.alts).map((a,j)=>`<div class="alt ${a===r.match?'on':''}" data-a="altpick" data-j="${j}">${a.card.image?`<img src="${img(a.card.image)}" loading="lazy">`:`<div class="noimg">bez obrázku</div>`}<div class="n">${esc(a.card.name)}</div><div class="s">${esc(a.set?.name||a.set?.id)} · ${esc(a.card.localId)}</div></div>`).join('')}</div>`:''}
       ${c?`<div class="sel">
@@ -619,7 +629,10 @@ $('scanResults').addEventListener('change', async e=>{
   if(a==='variant') renderScanRows();
 });
 $('scanResults').addEventListener('click', async e=>{
-  const b=e.target.closest('button[data-a=del]'); if(b){ S.scanRows.splice(+b.closest('.res').dataset.i,1); renderScanRows(); return; }
+  const b=e.target.closest('button[data-a=del]'); if(b){ const i=+b.closest('.res').dataset.i; const r=S.scanRows[i]; if(r.pendingId){ if(!confirm('Zahodit tuhle odloženou kartu?')) return; try{ await rpc('pk_pending_remove',{p_id:r.pendingId}); S.pendingCount=Math.max(0,(S.pendingCount||1)-1); renderPending(); }catch(err){ toast(err.message); return; } } S.scanRows.splice(i,1); renderScanRows(); return; }
+  const later=e.target.closest('button[data-a=later]'); if(later){ const i=+later.closest('.res').dataset.i; const r=S.scanRows[i]; later.innerHTML='<span class="spin"></span>';
+    try{ await rpc('pk_pending_add',{p_item:{photo:r.thumb||r.photo, det:r.det, owner:r.owner, condition:r.cond}}); S.pendingCount=(S.pendingCount||0)+1; S.scanRows.splice(i,1); renderScanRows(); renderPending(); toast('Odloženo do „K vyřešení“'); }catch(err){ toast(err.message); renderScanRows(); } return; }
+  const cust=e.target.closest('button[data-a=custom]'); if(cust){ const r=S.scanRows[+cust.closest('.res').dataset.i]; openCustomSheet(r); return; }
   const more=e.target.closest('button[data-a=more]'); if(more){ const r=S.scanRows[+more.closest('.res').dataset.i]; more.innerHTML='<span class="spin"></span>'; try{ const base=(r.det.name||'').split(/\s+(vstar|vmax|v|ex|gx)$/i)[0]; const all=await searchCards(base, null); const have=new Set((r.match?[r.match.card.id]:[]));
       const list=all.filter(c=>!have.has(c.id)).map(c=>{ const sid=c.id.split('-')[0]; const st=S.setMap[sid]; return {card:c,set:st||{id:sid,name:sid},score:nameMatch(r.det.name,c.name),idx:S.sets.indexOf(st)}; }).sort((x,y)=>y.score-x.score||y.idx-x.idx);
       r.alts=list; r.altsFull=true; }catch(err){ toast(err.message); } renderScanRows(); return; }
@@ -639,6 +652,8 @@ $('btnAddAll').onclick = async ()=>{
   const rows = S.scanRows.filter(r=>r.sel && r.match).map(r=>({card_id:r.match.card.id, set_id:r.match.set.id, local_id:r.match.card.localId, name:r.match.card.name, image:r.match.card.image, variant:r.variant, condition:r.cond, owner:r.owner, qty:r.qty}));
   if(!rows.length) return toast('Nic není vybráno');
   await addCards(rows);
+  for(const r of S.scanRows.filter(r=>r.sel && r.match && r.pendingId)){ try{ await rpc('pk_pending_remove',{p_id:r.pendingId}); S.pendingCount=Math.max(0,(S.pendingCount||1)-1); }catch(e){} }
+  renderPending();
   S.scanRows = S.scanRows.filter(r=>!(r.sel && r.match)); renderScanRows(); $('thumbs').innerHTML=''; $('scanProg').textContent='';
 };
 async function addCards(rows){
@@ -652,6 +667,39 @@ async function addCards(rows){
     toast(`Přidáno ${rows.reduce((a,r)=>a+(r.qty||1),0)} karet ✔`); renderAll();
   }catch(e){ toast('Uložení selhalo: '+e.message,5000); }
   finally{ $('btnAddAll').disabled=false; }
+}
+/* odložené karty */
+function renderPending(){ const n=S.pendingCount||0; $('pendingBox').style.display = n? '' : 'none'; $('pendingCount').textContent=n; }
+$('btnLoadPending').onclick = async ()=>{
+  $('btnLoadPending').innerHTML='<span class="spin"></span>';
+  try{ const list=await rpc('pk_pending_list',{}); const have=new Set(S.scanRows.map(r=>r.pendingId).filter(Boolean));
+    for(const it of list){ if(have.has(it.id)) continue; const det=it.det||{}; const m=await matchCard(det); let detail=null; if(m.match){ try{ detail=await loadCard(m.match.card.id);}catch(e){} }
+      S.scanRows.push({det, photo:it.photo, thumb:it.photo, pendingId:it.id, match:m.match, alts:m.alternatives, detail, variant:defaultVariant(det,detail), qty:1, owner:it.owner||$('bulkOwner').value, cond:it.condition||'NM', sel:!!m.match}); }
+    renderScanRows(); $('scanProg').textContent = `Načteno ${list.length} odložených karet.`;
+  }catch(e){ toast(e.message); }
+  $('btnLoadPending').textContent='Načíst do seznamu';
+};
+/* vlastní karta (mimo katalog) */
+function openCustomSheet(r){
+  const d=r.det||{};
+  openSheet(`<div style="font-weight:700;font-size:18px">Vlastní karta</div><div class="small muted">Pro karty, které v katalogu nejsou (japonské, McDonald's, promo…). Uloží se s tvou fotkou.</div>
+    <div class="row" style="margin-top:8px"><img src="${r.thumb||r.photo||''}" style="width:90px;border-radius:8px"><div class="grow small muted">Přečteno: ${esc(d.name||'')} ${esc(d.number||'')}${d.total?'/'+d.total:''} ${d.language?'('+esc(d.language)+')':''}</div></div>
+    <label class="f">Název</label><input id="cuName" value="${esc(d.name||'')}">
+    <label class="f">Sada / poznámka k původu</label><input id="cuSet" value="${esc(d.set_name||d.set_code||'')}" placeholder="např. Pokémon GO (JP), McDonald's 2022">
+    <div class="row"><div class="grow"><label class="f">Číslo</label><input id="cuNum" value="${esc(d.number||'')}${d.total?'/'+d.total:''}"></div><div class="grow"><label class="f">Cena (€ / ks)</label><input id="cuPrice" type="number" step="0.01" min="0" placeholder="doplň podle Cardmarketu"></div></div>
+    <div class="row"><div class="grow"><label class="f">Vlastník</label><select id="cuOwner">${S.owners.map(o=>`<option ${o===r.owner?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
+    <div class="grow"><label class="f">Stav</label><select id="cuCond">${['NM','EX','GD','LP','PL','PO'].map(x=>`<option ${x===r.cond?'selected':''}>${x}</option>`).join('')}</select></div>
+    <div style="width:80px"><label class="f">Počet</label><input id="cuQty" type="number" min="1" value="${r.qty||1}"></div></div>
+    <div style="height:12px"></div><button class="btn" id="cuAdd">➕ Uložit do sbírky</button>`);
+  $('cuAdd').onclick = async ()=>{
+    const name=$('cuName').value.trim(); if(!name) return toast('Zadej název');
+    const thumb = await makeThumb(r.thumb||r.photo, 360);
+    const row={card_id:'custom:'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), set_id:'custom', local_id:$('cuNum').value.trim()||'?', name, image:thumb, variant:'normal', condition:$('cuCond').value, owner:$('cuOwner').value, qty:+$('cuQty').value||1, note:$('cuSet').value.trim()};
+    try{ await rpc('pk_add_cards',{p_cards:[row]}); const all=await rpc('pk_get_all',{}); S.cards=all.cards; const c=S.cards.find(x=>x.card_id===row.card_id); const po=$('cuPrice').value.trim(); if(c && po){ await rpc('pk_update_card',{p_id:c.id,p_patch:{price_override:po}}); c.price_override=+po; }
+      if(r.pendingId){ try{ await rpc('pk_pending_remove',{p_id:r.pendingId}); S.pendingCount=Math.max(0,(S.pendingCount||1)-1); renderPending(); }catch(e){} }
+      S.scanRows=S.scanRows.filter(x=>x!==r); renderScanRows(); closeSheet(); renderAll(); toast('Vlastní karta uložena ✔');
+    }catch(e){ toast('Uložení selhalo: '+e.message,5000); }
+  };
 }
 /* ruční hledání */
 $('btnManual').onclick = async ()=>{
@@ -692,12 +740,12 @@ function renderCollection(){
   $('collList').innerHTML = list.length ? list.slice(0,300).map(c=>cardRow(c)).join('') + (list.length>300?`<div class="small muted" style="padding:8px">…a dalších ${list.length-300}. Použij hledání.</div>`:'') : '<div class="muted">Zatím prázdno. Začni na záložce Skenovat.</div>';
 }
 function variantBadge(v){ return v==='normal'?'':`<span class="badge ${v==='firstEdition'?'first':v}">${v==='firstEdition'?'1st Ed.':v==='reverse'?'Reverse':'Holo'}</span>`; }
-function cardRow(c){ const p=unitPrice(c); const s=S.setMap[c.set_id];
+function cardRow(c){ const p=unitPrice(c); const s=c.set_id==='custom' ? {name:'Vlastní karta'+(c.note?' · '+c.note:''), cardCount:{official:'?'}} : S.setMap[c.set_id];
   return `<div class="item" data-id="${c.id}"><img src="${img(c.image)}" loading="lazy"><div class="grow"><div class="t">${esc(c.name)} ${c.qty>1?`<span class="badge">×${c.qty}</span>`:''}</div><div class="small muted">${esc(s?.name||c.set_id)} · ${esc(c.local_id)}/${s?.cardCount?.official||'?'} · ${esc(c.owner)} · ${esc(c.condition)}</div><div>${variantBadge(c.variant)}</div></div><div class="price">${fmtKc(p!=null?p*(c.qty||1):null)}<span class="eur">${p!=null?fmtEur(p)+(c.qty>1?' /ks':'')+(c.price_override!=null?' ✎':''):'bez ceny'}</span></div></div>`; }
 $('ownerChips').addEventListener('click', e=>{ const ch=e.target.closest('.chip'); if(ch){ S.filterOwner=ch.dataset.o; renderCollection(); } });
 $('collList').addEventListener('click', e=>{ const it=e.target.closest('.item'); if(it) openEditSheet(it.dataset.id); });
 function openEditSheet(id){
-  const c=S.cards.find(x=>x.id===id); if(!c) return; const s=S.setMap[c.set_id]; const d=S.cardDetail[c.card_id]; const v=d?.variants||{normal:true,holo:true,reverse:true,firstEdition:true};
+  const c=S.cards.find(x=>x.id===id); if(!c) return; const s=c.set_id==='custom' ? {name:'Vlastní karta', cardCount:{official:'?'}} : S.setMap[c.set_id]; const d=S.cardDetail[c.card_id]; const v=d?.variants||{normal:true,holo:true,reverse:true,firstEdition:true};
   const vopts=[['normal','Normal'],['holo','Holo'],['reverse','Reverse holo'],['firstEdition','1st Edition']].filter(([k])=>v[k]||k===c.variant).map(([k,l])=>`<option value="${k}" ${c.variant===k?'selected':''}>${l} – ${fmtKc(priceOf(c.card_id,k))}</option>`).join('');
   openSheet(`<div class="row"><img src="${img(c.image,'high')}" style="width:120px;border-radius:8px"><div class="grow"><div class="big" style="font-size:20px">${esc(c.name)}</div><div class="muted small">${esc(s?.name||c.set_id)} · ${esc(c.local_id)}/${s?.cardCount?.official||'?'}</div><div class="price" style="text-align:left;margin-top:6px">${fmtKc(unitPrice(c))} <span class="small muted">${unitPrice(c)!=null?fmtEur(unitPrice(c))+' / ks'+(c.price_override!=null?' (vlastní)':''):'bez tržní ceny – doplň níže'}</span></div><div class="small muted">Přidáno ${new Date(c.added_at).toLocaleDateString('cs-CZ')}</div></div></div>
     <label class="f">Varianta</label><select id="eVariant">${vopts}</select>
