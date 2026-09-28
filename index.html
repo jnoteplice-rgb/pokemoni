@@ -202,6 +202,8 @@ a{color:var(--accent2)}
     <select id="sProvider"><option value="claude">Claude Haiku (Anthropic)</option><option value="gemini">Gemini 2.5 Flash (Google)</option></select>
     <label class="f">Claude API klíč <span class="muted">(<a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>)</span></label>
     <input id="sClaude" type="password" placeholder="sk-ant-…">
+    <label class="f">Claude workspace ID <span class="muted">(jen když to API vyžaduje – <a href="https://platform.claude.com/settings/workspaces" target="_blank">Workspaces</a>, začíná wrkspc_)</span></label>
+    <input id="sClaudeWs" placeholder="wrkspc_…">
     <label class="f">Gemini API klíč <span class="muted">(<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>)</span></label>
     <input id="sGemini" type="password" placeholder="AIza…">
     <div class="small muted" style="margin-top:6px">Stačí klíč k vybranému modelu. Bez klíče funguje jen ruční přidávání.</div>
@@ -421,7 +423,7 @@ function showView(v){
 $('tabs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b){ showView(b.dataset.v); if(b.dataset.v==='sets'){ $('setDetail').classList.add('hidden'); $('setsHome').classList.remove('hidden'); } } });
 function fillOwnerSelects(){
   const opts = S.owners.map(o=>`<option>${esc(o)}</option>`).join('');
-  $('bulkOwner').innerHTML = opts; $('sOwners').value = S.owners.join(', '); $('sRate').value=S.rate; $('sGemini').value=S.settings.gemini_key||''; $('sClaude').value=S.settings.claude_key||''; $('sProvider').value=S.settings.ai_provider||'claude';
+  $('bulkOwner').innerHTML = opts; $('sOwners').value = S.owners.join(', '); $('sRate').value=S.rate; $('sGemini').value=S.settings.gemini_key||''; $('sClaude').value=S.settings.claude_key||''; $('sClaudeWs').value=S.settings.claude_workspace||''; $('sProvider').value=S.settings.ai_provider||'claude';
 }
 function renderAll(){ renderCollection(); renderSets(); renderDash(); }
 
@@ -460,7 +462,7 @@ async function claudeRecognize(b64){
       {role:'user', content:[{type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}}, {type:'text', text:RECOGNIZE_PROMPT}]},
       {role:'assistant', content:'['}   // prefill: odpověď začne rovnou JSON polem
     ] };
-  const r = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
+  const r = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:Object.assign({'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, S.settings.claude_workspace?{'anthropic-workspace-id':S.settings.claude_workspace.trim()}:{}),body:JSON.stringify(body)});
   if(!r.ok){ let t=await r.text(); try{ t=JSON.parse(t).error?.message||t; }catch(e){} throw new Error('Claude '+r.status+': '+String(t).slice(0,200)); }
   const j = await r.json(); const txt = '[' + (j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
   return parseCardsJson(txt, 'Claude');
@@ -694,10 +696,11 @@ $('btnSave').onclick = async ()=>{
     await rpc('pk_set_setting',{p_key:'owners',p_value:JSON.stringify(owners)});
     await rpc('pk_set_setting',{p_key:'gemini_key',p_value:$('sGemini').value.trim()});
     await rpc('pk_set_setting',{p_key:'claude_key',p_value:$('sClaude').value.trim()});
+    await rpc('pk_set_setting',{p_key:'claude_workspace',p_value:$('sClaudeWs').value.trim()});
     await rpc('pk_set_setting',{p_key:'ai_provider',p_value:$('sProvider').value});
     await rpc('pk_set_setting',{p_key:'eur_czk',p_value:String(parseFloat($('sRate').value)||24.5)});
     if($('sPin').value){ await rpc('pk_set_setting',{p_key:'pin',p_value:$('sPin').value}); S.pin=$('sPin').value; localStorage.setItem('pk_pin',S.pin); $('sPin').value=''; }
-    S.owners=owners; S.settings.gemini_key=$('sGemini').value.trim(); S.settings.claude_key=$('sClaude').value.trim(); S.settings.ai_provider=$('sProvider').value; S.rate=parseFloat($('sRate').value)||24.5; fillOwnerSelects(); renderAll(); toast('Nastavení uloženo ✔');
+    S.owners=owners; S.settings.gemini_key=$('sGemini').value.trim(); S.settings.claude_key=$('sClaude').value.trim(); S.settings.claude_workspace=$('sClaudeWs').value.trim(); S.settings.ai_provider=$('sProvider').value; S.rate=parseFloat($('sRate').value)||24.5; fillOwnerSelects(); renderAll(); toast('Nastavení uloženo ✔');
   }catch(e){ toast(e.message,5000); }
 };
 $('btnClearCache').onclick=()=>{ cache.clearPrefix('set_'); cache.clearPrefix('card_'); cache.clearPrefix('sets'); cache.clearPrefix('code_'); S.setCards={}; S.cardDetail={}; localStorage.removeItem('pk_lastRefresh'); toast('Mezipaměť vymazána'); };
