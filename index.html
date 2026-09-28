@@ -209,7 +209,7 @@ a{color:var(--accent2)}
   <div class="card">
     <div style="font-weight:600">Rozpoznávání karet z fotek</div>
     <label class="f">Model</label>
-    <select id="sProvider"><option value="claude">Claude Haiku (Anthropic)</option><option value="gemini">Gemini 2.5 Flash (Google)</option></select>
+    <select id="sProvider"><option value="claude">Claude Sonnet (Anthropic)</option><option value="gemini">Gemini 2.5 Flash (Google)</option></select>
     <label class="f">Claude API klíč <span class="muted">(<a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>)</span></label>
     <input id="sClaude" type="password" placeholder="sk-ant-…">
     <label class="f">Claude workspace ID <span class="muted">(jen když to API vyžaduje – <a href="https://platform.claude.com/settings/workspaces" target="_blank">Workspaces</a>, začíná wrkspc_)</span></label>
@@ -233,7 +233,7 @@ a{color:var(--accent2)}
   <button class="btn ghost" id="btnClearCache">Vymazat mezipaměť sad a cen</button>
   <div style="height:12px"></div>
   <button class="btn ghost" id="btnLogout">Odhlásit</button>
-  <div class="small muted" style="margin-top:16px">Verze appky <b id="ver2"></b>. Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Claude Haiku nebo Google Gemini. Databáze: Supabase.</div>
+  <div class="small muted" style="margin-top:16px">Verze appky <b id="ver2"></b>. Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Claude Sonnet (na vyžádání Opus) nebo Google Gemini. Databáze: Supabase.</div>
 </section>
 </main>
 
@@ -250,13 +250,13 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.0';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.1';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
 const GEMINI_MODEL = 'gemini-2.5-flash';
-const CLAUDE_MODEL = 'claude-haiku-4-5';
-const CLAUDE_SMART = 'claude-sonnet-4-5';   // chytřejší model na vyžádání
+const CLAUDE_MODEL = 'claude-sonnet-4-5';   // výchozí model pro čtení karet (Sonnet = přesnější)
+const CLAUDE_SMART = 'claude-opus-4-1';     // ještě silnější model na vyžádání
 const PRICE_TTL = 20*3600*1000;   // ceny čerstvé 20 h
 const SET_TTL   = 7*24*3600*1000; // seznam karet sady 7 dní
 
@@ -563,14 +563,14 @@ function renderScanRows(){
         <div class="grow">
           <div class="row"><input type="checkbox" data-a="sel" ${r.sel?'checked':''} style="width:auto"> <span class="t">${c?esc(c.name):esc(r.det.name||'Neznámá karta')}</span></div>
           <div class="small muted">${c?`${esc(s?.name||s?.id)} · ${esc(c.localId)}/${S.setMap[s?.id]?.cardCount?.official||'?'}`:''}</div>
-          <div class="small muted" style="opacity:.7">Přečteno${r.smart?' (Sonnet)':''}: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}</div>
+          <div class="small muted" style="opacity:.7">Přečteno${r.smart?' (Opus)':''}: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}</div>
           ${c?`<div class="price" style="text-align:left">${fmtKc(p)} <span class="muted small">${fmtEur(p)}</span></div>`:`<div class="small" style="color:var(--warn)">Nenalezeno v databázi – vyber z návrhů nebo hledej ručně.</div>`}
         </div>
         <button class="btn small ghost" data-a="del">✕</button>
       </div>
       <div class="row wrap" style="margin-top:8px;gap:6px">
         ${r.altsFull?'':`<button class="btn small ghost" data-a="more">🔎 Další možnosti</button>`}
-        <button class="btn small ghost" data-a="smart" ${r.busy?'disabled':''}>${r.busy?'<span class="spin"></span> čtu…':'🧠 Přečíst znovu chytřejším modelem'}</button>
+        <button class="btn small ghost" data-a="smart" ${r.busy?'disabled':''}>${r.busy?'<span class="spin"></span> čtu…':'🧠 Přečíst znovu nejsilnějším modelem (Opus)'}</button>
       </div>
       ${r.alts?.length?`<div class="small muted" style="margin-top:8px">${c?'Není to ona? Klepni na správnou kartu:':'Vyber správnou kartu:'}</div><div class="alts">${(c?[r.match]:[]).concat(r.alts).map((a,j)=>`<div class="alt ${a===r.match?'on':''}" data-a="altpick" data-j="${j}">${a.card.image?`<img src="${img(a.card.image)}" loading="lazy">`:`<div class="noimg">bez obrázku</div>`}<div class="n">${esc(a.card.name)}</div><div class="s">${esc(a.set?.name||a.set?.id)} · ${esc(a.card.localId)}</div></div>`).join('')}</div>`:''}
       ${c?`<div class="sel">
@@ -594,7 +594,7 @@ $('scanResults').addEventListener('click', async e=>{
     try{ const b64=r.photo.split(',')[1]; const dets=await recognize(b64, true); if(!dets.length) throw new Error('Chytřejší model na fotce kartu nenašel');
       const det = dets.find(d=>nameMatch(d.name, r.det.name)>=0.5) || dets[0]; const m=await matchCard(det);
       r.det=det; r.match=m.match; r.alts=m.alternatives; r.altsFull=false; r.detail=null; if(m.match){ try{ r.detail=await loadCard(m.match.card.id);}catch(e){} } r.variant=defaultVariant(det,r.detail); r.sel=!!m.match; r.smart=true;
-      toast(m.match?`Sonnet: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} → ${m.match.card.name} (${m.match.set?.name})`:`Sonnet přečetl: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} – vyber z nabídky`, 5000);
+      toast(m.match?`Opus: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} → ${m.match.card.name} (${m.match.set?.name})`:`Opus přečetl: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} – vyber z nabídky`, 5000);
     }catch(err){ toast(err.message, 5000); } r.busy=false; renderScanRows(); return; }
   const a=e.target.closest('.alt[data-a=altpick]'); if(!a) return;
   const r=S.scanRows[+a.closest('.res').dataset.i]; const list=(r.match?[r.match]:[]).concat(r.alts); const pick=list[+a.dataset.j]; if(!pick||pick===r.match) return;
