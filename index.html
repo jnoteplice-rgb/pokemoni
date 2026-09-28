@@ -250,13 +250,13 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.3';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.4';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const CLAUDE_MODEL = 'claude-sonnet-4-5';   // výchozí model pro čtení karet (Sonnet = přesnější)
-const CLAUDE_SMART = 'claude-opus-4-1';     // ještě silnější model na vyžádání
+let CLAUDE_SMART = null;                    // nejnovější Opus – zjistí se z API (viz smartModel)
 const PRICE_TTL = 20*3600*1000;   // ceny čerstvé 20 h
 const SET_TTL   = 7*24*3600*1000; // seznam karet sady 7 dní
 
@@ -454,7 +454,7 @@ async function fileToJpegBase64(file, max=1600){
 }
 const RECOGNIZE_PROMPT = `You are an expert Pokémon TCG card identifier. Look at the photo and list EVERY Pokémon trading card visible (there may be 1 to 12 cards, e.g. a binder page). For each card read the text printed on it.
 Return ONLY a JSON array, one object per card, in reading order (left→right, top→bottom):
-{"name": card name exactly as printed (English if English card), "number": the COLLECTOR number printed in small text at the bottom edge of the card, the part before the slash in "025/198" (keep leading zeros). NEVER use the National Pokédex number (printed as "No. 383" or "NO. 006" near the Pokémon info line) - that is not the collector number. Read the collector number digit by digit and double-check it; it is tiny text at the bottom-left (Sword & Shield era) or bottom-left corner (Scarlet & Violet era). If the collector number is not readable, set number to null. Also read the card NAME exactly as printed in the title bar, including the suffix: V, VMAX, VSTAR, ex, GX, V-UNION. Distinguish carefully: "VMAX" and "VSTAR" cards have that word after the name and usually HP 230+; a plain "V" card has just the letter V, "total": the number after the slash if present (e.g. 198) else null, "set_code": the 3-letter set abbreviation printed in the bottom-left corner next to the set symbol if visible (e.g. "SVI","PAF","MEW","OBF","PGO","SIT","FST"), else null. It is NEVER the single regulation-mark letter (D, E, F, G, H, I) printed in a small box - ignore that letter, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "anniversary_25": true if the gold "25" Pokémon 25th-anniversary logo is printed on the card (Celebrations 2021 reprints of classic cards carry it, usually near the artwork or bottom), "stamp": any other special stamp text visible (e.g. "Pokémon GO", "Prerelease", "Staff", "Cosmos") else null, "language": ISO code of the card language, "confidence": 0-1}
+{"name": card name exactly as printed (English if English card), "number": the COLLECTOR number printed in small text at the bottom edge of the card, the part before the slash in "025/198" (keep leading zeros). NEVER use the National Pokédex number (printed as "No. 383" or "NO. 006" near the Pokémon info line) - that is not the collector number. Read the collector number digit by digit and double-check it; it is tiny text at the bottom-left (Sword & Shield era) or bottom-left corner (Scarlet & Violet era). If the collector number is not readable, set number to null. Also read the card NAME exactly as printed in the title bar, including the suffix: V, VMAX, VSTAR, ex, GX, V-UNION. Distinguish carefully: "VMAX" and "VSTAR" cards have that word after the name and usually HP 230+; a plain "V" card has just the letter V, "total": the number after the slash if present (e.g. 198) else null, "set_code": the 3-letter set abbreviation printed in the bottom-left corner next to the set symbol if visible (e.g. "SVI","PAF","MEW","OBF","PGO","SIT","FST"), else null. It is NEVER the single regulation-mark letter (D, E, F, G, H, I) printed in a small box - ignore that letter, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "anniversary_25": true if the small gold/yellow "25" Pokémon 25th-anniversary logo (a stylised 25 with Pikachu silhouette) is printed on the card - on Celebrations 2021 Classic Collection reprints it sits in the bottom-left area of the card just above the copyright line, next to the set symbol; look for it carefully on any classic-looking card (Base Set, Neo, e-Card, EX era style), "stamp": any other special stamp text visible (e.g. "Pokémon GO", "Prerelease", "Staff", "Cosmos") else null, "language": ISO code of the card language, "confidence": 0-1}
 If no card is visible return []. Output the JSON array only, no prose, no markdown fences.`;
 function parseCardsJson(txt, who){
   txt = String(txt||'').replace(/```json|```/g,'').trim(); const m = txt.match(/\[[\s\S]*\]/);
@@ -480,7 +480,15 @@ async function claudeRecognize(b64, model=CLAUDE_MODEL){
   const j = await r.json(); const txt = '[' + (j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
   return parseCardsJson(txt, 'Claude');
 }
-async function recognize(b64, smart=false){ if(smart) return claudeRecognize(b64, CLAUDE_SMART); return (S.settings.ai_provider||'claude')==='gemini' ? geminiRecognize(b64) : claudeRecognize(b64); }
+async function smartModel(){
+  if(CLAUDE_SMART) return CLAUDE_SMART;
+  try{
+    const r = await fetch('https://api.anthropic.com/v1/models?limit=100',{headers:Object.assign({'x-api-key':S.settings.claude_key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, S.settings.claude_workspace?{'anthropic-workspace-id':S.settings.claude_workspace.trim()}:{})});
+    if(r.ok){ const j=await r.json(); const opus=(j.data||[]).filter(m=>/opus/i.test(m.id)).sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||'')); if(opus.length){ CLAUDE_SMART=opus[0].id; return CLAUDE_SMART; } }
+  }catch(e){}
+  return CLAUDE_MODEL;
+}
+async function recognize(b64, smart=false){ if(smart){ const m=await smartModel(); if(m===CLAUDE_MODEL) toast('Opus není k dispozici, čtu znovu Sonnetem'); return claudeRecognize(b64, m); } return (S.settings.ai_provider||'claude')==='gemini' ? geminiRecognize(b64) : claudeRecognize(b64); }
 const normName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
 const SUFFIX_RE = /\s+(vstar|vmax|v-union|v|ex|gx|tag team|prism star|lv\.?\s*x|δ|star)\s*$/i;
 function splitName(n){ n=String(n||'').trim(); const m=n.match(SUFFIX_RE); return {base: normName(m ? n.slice(0,m.index) : n), suf: m ? normName(m[1]) : ''}; }
@@ -517,6 +525,8 @@ async function matchCard(det){
         push(c, st||{id:sid,name:sid}, sc); });
     }catch(e){}
   }
+  // Celebrations Classic Collection reprinty (logo 25) – nabídnout vždy jako alternativu, když existuje karta stejného jména
+  if(!det.anniversary_25){ try{ const cc=await loadSet('cel25cc'); cc.cards.forEach(c=>{ if(nmScore(c.name)>=0.8 && !seen.has(c.id)) push(c, S.setMap['cel25cc'], 0.95); }); }catch(e){} }
   cands.forEach(c=>{ c.idx = S.sets.indexOf(S.setMap[c.set?.id]); });
   cands.sort((a,b)=> b.score-a.score || b.idx-a.idx);
   const best = cands[0];
