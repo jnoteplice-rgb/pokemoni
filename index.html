@@ -253,7 +253,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.8';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.9';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -518,7 +518,7 @@ async function smartModel(){
 }
 async function recognize(b64, smart=false){ if(smart){ const m=await smartModel(); if(m===CLAUDE_MODEL) toast('Opus není k dispozici, čtu znovu Sonnetem'); return claudeRecognize(b64, m); } return (S.settings.ai_provider||'claude')==='gemini' ? geminiRecognize(b64) : claudeRecognize(b64); }
 const normName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\p{L}\p{N}]/gu,'');
-const SUFFIX_RE = /\s+(vstar|vmax|v-union|v|ex|gx|tag team|prism star|lv\.?\s*x|δ|star)\s*$/i;
+const SUFFIX_RE = /[\s\-–]+(vstar|vmax|v-union|v|ex|gx|tag team|prism star|lv\.?\s*x|δ|star)\s*$/i;
 function splitName(n){ n=String(n||'').trim(); const m=n.match(SUFFIX_RE); return {base: normName(m ? n.slice(0,m.index) : n), suf: m ? normName(m[1]) : ''}; }
 function nameMatch(a,b){
   const A=splitName(a), B=splitName(b); if(!A.base||!B.base) return 0;
@@ -528,6 +528,9 @@ function nameMatch(a,b){
 }
 async function matchCard(det){
   det = {...det, total: parseInt(det.total)||null, number: det.number==null?null:String(det.number)};
+  // Speciální číslování: Trainer Gallery (TG30), Shiny Vault (SV110), promo (SWSH061, SVP 001, SM 123, XY 45, GG 12)
+  const alnum = new Set();
+  for(const tok of [det.number, det.set_code, String(det.total||'')]){ const t=String(tok||'').toUpperCase().replace(/\s+/g,''); const mm=t.match(/^(TG|SV|SWSH|SVP|SM|XY|GG|BW|HGSS|DP|CC)0*(\d{1,3})(?:\/.*)?$/); if(mm){ const pre=mm[1], d=mm[2]; const pads = pre==='TG'||pre==='GG'||pre==='XY' ? [2,3,1] : pre==='SM'||pre==='SWSH'||pre==='SV'||pre==='SVP'||pre==='CC' ? [3,2,1] : [1,2,3]; pads.forEach(pd=>alnum.add(pre+d.padStart(pd,'0'))); } }
   const num = normNum(det.number); const nm = det.name||''; const baseName = nm.split(/\s+(ex|gx|v|vmax|vstar)$/i)[0];
   const nmScore = (cardName) => Math.max(nameMatch(nm, cardName), nameMatch(baseName, cardName)*0.6);
   // 1) kandidátní sady: podle kódu sady, jinak podle celkového počtu za lomítkem
@@ -544,6 +547,10 @@ async function matchCard(det){
     d.cards.forEach(c => { const ns = nmScore(c.name); if(ns >= 0.8){ const dist = num ? Math.abs((parseInt(c.localId)||0)-(parseInt(num)||-99)) : 99; push(c, s, ns + bonus + (normNum(c.localId)===num ? 0.5 : (dist<=8 ? 0.25*(1-dist/9) : 0))); } });
     // b) karta podle ČÍSLA – jen jako slabší kandidát, když jméno nesedí
     if(num){ const byNum = d.cards.find(c=>normNum(c.localId)===num); if(byNum) push(byNum, s, (nmScore(byNum.name) >= 0.8 ? 1.5 : 0.4) + bonus); }
+  }
+  // 1b) alfanumerická čísla – hledat přímo podle localId (+ jméno)
+  if(alnum.size && !cands.some(c=>c.score >= 1.0)){
+    for(const id of alnum){ try{ const r = await tj(`${TCGDEX}/${S.lang}/cards?localId=${encodeURIComponent(id)}`); r.forEach(c=>{ fixImage(c); const sid=c.id.split('-')[0]; const st=S.setMap[sid]; const ns=nmScore(c.name); if(ns>=0.8 || !nm) push(c, st||{id:sid,name:sid}, ns + 0.5); else push(c, st||{id:sid,name:sid}, 0.3+ns*0.5); }); }catch(e){} if(cands.some(c=>c.score>=1.0)) break; }
   }
   // 2) když nic jistého, celokatalogové hledání podle jména
   if(!cands.some(c=>c.score >= 1.0) && baseName){
