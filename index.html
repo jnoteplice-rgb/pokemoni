@@ -93,7 +93,8 @@ canvas.chart{width:100%;height:140px;display:block}
 .noimg{width:100%;aspect-ratio:63/88;border-radius:6px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
 .alt .n{font-size:12px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .alt .s{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:480px){.res .top img{width:110px;height:154px}}
+.res .pics .noimg.big{width:150px;height:210px;aspect-ratio:auto}
+@media (max-width:480px){.res .top img{width:110px;height:154px}.res .pics .noimg.big{width:110px;height:154px}}
 .res select,.res input{padding:7px 8px;font-size:13px}
 .sel{display:grid;grid-template-columns:1fr 1fr 60px;gap:6px;margin-top:8px}
 a{color:var(--accent2)}
@@ -253,7 +254,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '3.0';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '3.1';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -288,6 +289,14 @@ const fixImage = c => {
   c.image = `https://images.pokemontcg.io/${pid}/${lid}`; c.imageGuess = true;   // může neexistovat → onerror v UI
   return c;
 };
+// ověření odhadnutého obrázku (pokemontcg.io vrací i pro 404 obrázek rubu karty → nutno ověřit HTTP stavem)
+async function ensureImage(c){
+  if(!c || !c.imageGuess) return c;
+  const k='imgok_'+c.id; let ok = cache.get(k);
+  if(ok==null){ try{ const r=await fetch(c.image+'.png',{method:'HEAD'}); ok = r.ok?1:0; }catch(e){ ok = 0; } cache.set(k, ok, 30*24*3600*1000); }
+  if(!ok){ c.image=null; } c.imageGuess=false; c.imgChecked=true; return c;
+}
+async function ensureImages(cards, limit=8){ const q=cards.filter(c=>c && c.imageGuess); const w=async()=>{ while(q.length){ await ensureImage(q.shift()); } }; await Promise.all(Array.from({length:limit},w)); }
 const img = (base, size='low') => !base ? '' : base.startsWith('data:') ? base : base.startsWith('https://images.pokemontcg.io/') ? (size==='high' ? base+'_hires.png' : base+'.png') : `${base}/${size}.webp`;
 const normNum = n => String(n ?? '').trim().replace(/^0+(?=\d)/,'').toUpperCase();
 function toast(m, ms=2500){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); }
@@ -575,6 +584,7 @@ async function matchCard(det){
   if(!det.anniversary_25){ try{ const cc=await loadSet('cel25cc'); cc.cards.forEach(c=>{ if(nmScore(c.name)>=0.8 && !seen.has(c.id)) push(c, S.setMap['cel25cc'], 0.95); }); }catch(e){} }
   cands.forEach(c=>{ c.idx = S.sets.indexOf(S.setMap[c.set?.id]); });
   cands.sort((a,b)=> b.score-a.score || b.idx-a.idx);
+  await ensureImages(cands.slice(0,13).map(c=>c.card));
   const best = cands[0];
   if(best && best.score >= 1.0) return {match:best, alternatives:cands.slice(1,12)};
   return {match:null, alternatives:cands.slice(0,12)};
@@ -600,7 +610,7 @@ async function handleFiles(files){
       for(const det of dets){
         $('scanProg').innerHTML=`<span class="spin"></span> Fotka ${i+1}/${arr.length}: hledám „${esc(det.name||'?')} ${esc(det.number||'')}“…`;
         let m = await matchCard(det); m = await verifyAnniversary(m, det, b64); let detail=null; if(m.match){ try{ detail=await loadCard(m.match.card.id);}catch(e){} }
-        S.scanRows.push({det, photo:url, thumb: await makeThumb(url, 520), match:m.match, alts:m.alternatives, detail, variant: defaultVariant(det, detail), qty:1, owner:$('bulkOwner').value, cond:$('bulkCond').value, sel: !!m.match});
+        S.scanRows.push({det, photo:url, thumb: await makeThumb(url, 520), match:m.match, alts:m.alternatives, detail, variant: defaultVariant(det, detail), qty:1, owner:$('bulkOwner').value, cond:$('bulkCond').value, sel: !!(m.match && m.match.card.image)});
         renderScanRows();
       }
     }catch(e){ toast(e.message, 5000); }
@@ -608,6 +618,7 @@ async function handleFiles(files){
   $('scanProg').textContent = S.scanRows.length ? `Rozpoznáno ${S.scanRows.length} karet. Zkontroluj a přidej.` : 'Nic nerozpoznáno.';
   $('fCam').value=''; $('fGal').value='';
 }
+function markNoImage(i){ const r=S.scanRows[i]; if(!r || r.noimg) return; r.noimg=true; r.sel=false; renderScanRows(); }
 function renderScanRows(){
   const box=$('scanResults'); $('scanActions').classList.toggle('hidden', !S.scanRows.length);
   box.innerHTML = S.scanRows.map((r,i)=>{
@@ -617,11 +628,12 @@ function renderScanRows(){
       <div class="top">
         <div class="pics">
           <div><img src="${r.photo||''}" alt=""><div class="cap">tvoje fotka</div></div>
-          ${c?`<div>${c.image?`<img src="${img(c.image,'high')}" onerror="this.outerHTML='<div class=noimg style=width:150px;height:210px>bez obrázku<br>v katalogu</div>'">`:`<div class="noimg" style="width:150px;height:210px">bez obrázku<br>v katalogu</div>`}<div class="cap">v katalogu</div></div>`:''}
+          ${c?`<div>${c.image && !r.noimg?`<img src="${img(c.image,'high')}" onerror="markNoImage(${i})" onload="if(this.naturalWidth===640&&this.naturalHeight===892)markNoImage(${i})">`:`<div class="noimg big">bez obrázku<br>v katalogu</div>`}<div class="cap">v katalogu</div></div>`:''}
         </div>
         <div class="grow">
           <div class="row"><input type="checkbox" data-a="sel" ${r.sel?'checked':''} style="width:auto"> <span class="t">${c?esc(c.name):esc(r.det.name||'Neznámá karta')}</span></div>
           <div class="small muted">${c?`${esc(s?.name||s?.id)} · ${esc(c.localId)}/${S.setMap[s?.id]?.cardCount?.official||'?'}`:''}</div>
+          ${c && (r.noimg || !c.image)?`<div class="small" style="color:var(--warn)">⚠️ Katalog nemá obrázek této karty – nelze ověřit pohledem. Zaškrtni jen, když si jsi jistý (nebo odlož / vlastní karta).</div>`:''}
           <div class="small muted" style="opacity:.7">Přečteno${r.smart?' (Opus)':''}: ${esc(r.det.name||'?')} ${esc(r.det.number||'')}${r.det.total?'/'+r.det.total:''} ${r.det.set_code?'('+esc(r.det.set_code)+')':''}${r.det.anniversary_25?' · logo 25th':''}${r.det.stamp?' · '+esc(r.det.stamp):''}</div>
           ${c?`<div class="price" style="text-align:left">${p!=null?fmtKc(p)+' <span class="muted small">'+fmtEur(p)+'</span>':'<span class="small" style="color:var(--warn);font-weight:400">bez tržní ceny – po přidání doplň vlastní cenu v detailu karty</span>'}</div>`:`<div class="small" style="color:var(--warn)">Nenalezeno v databázi – vyber z návrhů nebo hledej ručně.</div>`}
         </div>
@@ -653,16 +665,16 @@ $('scanResults').addEventListener('click', async e=>{
   const cust=e.target.closest('button[data-a=custom]'); if(cust){ const r=S.scanRows[+cust.closest('.res').dataset.i]; openCustomSheet(r); return; }
   const more=e.target.closest('button[data-a=more]'); if(more){ const r=S.scanRows[+more.closest('.res').dataset.i]; more.innerHTML='<span class="spin"></span>'; try{ const base=(r.det.name||'').split(/\s+(vstar|vmax|v|ex|gx)$/i)[0]; const all=await searchCards(base, null); const have=new Set((r.match?[r.match.card.id]:[]));
       const list=all.filter(c=>!have.has(c.id)).map(c=>{ const sid=c.id.split('-')[0]; const st=S.setMap[sid]; return {card:c,set:st||{id:sid,name:sid},score:nameMatch(r.det.name,c.name),idx:S.sets.indexOf(st)}; }).sort((x,y)=>y.score-x.score||y.idx-x.idx);
-      r.alts=list; r.altsFull=true; }catch(err){ toast(err.message); } renderScanRows(); return; }
+      await ensureImages(list.map(x=>x.card)); r.alts=list; r.altsFull=true; }catch(err){ toast(err.message); } renderScanRows(); return; }
   const sm=e.target.closest('button[data-a=smart]'); if(sm){ const r=S.scanRows[+sm.closest('.res').dataset.i]; if(!r.photo) return toast('Chybí fotka'); r.busy=true; renderScanRows();
     try{ const b64=r.photo.split(',')[1]; const dets=await recognize(b64, true); if(!dets.length) throw new Error('Chytřejší model na fotce kartu nenašel');
       const det = dets.find(d=>nameMatch(d.name, r.det.name)>=0.5) || dets[0]; let m=await matchCard(det); m=await verifyAnniversary(m, det, b64);
-      r.det=det; r.match=m.match; r.alts=m.alternatives; r.altsFull=false; r.detail=null; if(m.match){ try{ r.detail=await loadCard(m.match.card.id);}catch(e){} } r.variant=defaultVariant(det,r.detail); r.sel=!!m.match; r.smart=true;
+      r.det=det; r.match=m.match; r.alts=m.alternatives; r.altsFull=false; r.detail=null; if(m.match){ try{ r.detail=await loadCard(m.match.card.id);}catch(e){} } r.variant=defaultVariant(det,r.detail); r.noimg=false; r.sel=!!(m.match && m.match.card.image); r.smart=true;
       toast(m.match?`Opus: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} → ${m.match.card.name} (${m.match.set?.name})`:`Opus přečetl: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} – vyber z nabídky`, 5000);
     }catch(err){ toast(err.message, 5000); } r.busy=false; renderScanRows(); return; }
   const a=e.target.closest('.alt[data-a=altpick]'); if(!a) return;
   const r=S.scanRows[+a.closest('.res').dataset.i]; const list=(r.match?[r.match]:[]).concat(r.alts); const pick=list[+a.dataset.j]; if(!pick||pick===r.match) return;
-  r.match=pick; r.alts=list.filter(x=>x!==pick); try{ r.detail=await loadCard(pick.card.id);}catch(e){} r.variant=defaultVariant(r.det,r.detail); r.sel=true; renderScanRows();
+  r.match=pick; r.alts=list.filter(x=>x!==pick); r.noimg=false; try{ r.detail=await loadCard(pick.card.id);}catch(e){} r.variant=defaultVariant(r.det,r.detail); r.sel=!!pick.card.image; renderScanRows();
 });
 $('bulkOwner').onchange = e => { S.scanRows.forEach(r=>r.owner=e.target.value); renderScanRows(); };
 $('bulkCond').onchange = e => { S.scanRows.forEach(r=>r.cond=e.target.value); };
@@ -692,7 +704,7 @@ $('btnLoadPending').onclick = async ()=>{
   $('btnLoadPending').innerHTML='<span class="spin"></span>';
   try{ const list=await rpc('pk_pending_list',{}); const have=new Set(S.scanRows.map(r=>r.pendingId).filter(Boolean));
     for(const it of list){ if(have.has(it.id)) continue; const det=it.det||{}; const m=await matchCard(det); let detail=null; if(m.match){ try{ detail=await loadCard(m.match.card.id);}catch(e){} }
-      S.scanRows.push({det, photo:it.photo, thumb:it.photo, pendingId:it.id, match:m.match, alts:m.alternatives, detail, variant:defaultVariant(det,detail), qty:1, owner:it.owner||$('bulkOwner').value, cond:it.condition||'NM', sel:!!m.match}); }
+      S.scanRows.push({det, photo:it.photo, thumb:it.photo, pendingId:it.id, match:m.match, alts:m.alternatives, detail, variant:defaultVariant(det,detail), qty:1, owner:it.owner||$('bulkOwner').value, cond:it.condition||'NM', sel:!!(m.match && m.match.card.image)}); }
     renderScanRows(); $('scanProg').textContent = `Načteno ${list.length} odložených karet.`;
   }catch(e){ toast(e.message); }
   $('btnLoadPending').textContent='Načíst do seznamu';
@@ -796,7 +808,7 @@ async function openSetDetail(id){
   S.curSet=id; const s=S.setMap[id]; $('setsHome').classList.add('hidden'); const box=$('setDetail'); box.classList.remove('hidden');
   box.innerHTML=`<div class="card"><button class="btn small ghost" id="setBack">‹ Zpět</button> <span class="muted"><span class="spin"></span> Načítám sadu…</span></div>`;
   $('setBack').onclick=()=>{ box.classList.add('hidden'); $('setsHome').classList.remove('hidden'); S.curSet=null; renderSets(); };
-  let d; try{ d=await loadSet(id); }catch(e){ box.innerHTML+='<div class="card">Sadu se nepodařilo načíst.</div>'; return; }
+  let d; try{ d=await loadSet(id); await ensureImages(d.cards); }catch(e){ box.innerHTML+='<div class="card">Sadu se nepodařilo načíst.</div>'; return; }
   const own=ownedMap(id); const official=d.cardCount?.official||d.cards.length;
   const main=d.cards.filter(c=>!official || (parseInt(c.localId)||0)<=official || isNaN(parseInt(c.localId)));
   const secret=d.cards.filter(c=>!main.includes(c));
