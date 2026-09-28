@@ -253,7 +253,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.9';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '3.0';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -277,7 +277,17 @@ const fmtKc = eur => eur == null ? '–' : Math.round(eur*S.rate).toLocaleString
 const fmtEur = eur => eur == null ? '' : eur.toLocaleString('cs-CZ',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
 // Obrázky, které TCGdex nemá (Celebrations Classic Collection) – bereme z pokemontcg.io
 const IMG_OVERRIDE = (()=>{ const m={CC001:'2_A',CC002:'4_A',CC003:'15_A',CC004:'73_A',CC005:'8_A',CC006:'15_B',CC007:'15_C',CC008:'24_A',CC009:'20_A',CC010:'66_A',CC011:'9_A',CC012:'86_A',CC013:'88_A',CC014:'93_A',CC015:'17_A',CC016:'15_D',CC017:'109_A',CC018:'145_A',CC019:'107_A',CC020:'113_A',CC021:'114_A',CC022:'54_A',CC023:'97_A',CC024:'76_A',CC025:'60_A'}; const o={}; for(const k in m) o['cel25cc-'+k]='https://images.pokemontcg.io/cel25c/'+m[k]; return o; })();
-const fixImage = c => { if(c && !c.image && IMG_OVERRIDE[c.id]) c.image = IMG_OVERRIDE[c.id]; return c; };
+// mapování id sad TCGdex → pokemontcg.io pro sady, kde TCGdex obrázky nemá
+const PTCG_SET = {'swsh4.5sv':'swsh45sv','swsh12.5gg':'swsh12pt5gg','sm3.5':'sm35','sm7.5':'sm75','2011bw':'mcd11','2012bw':'mcd12','2016xy':'mcd16','2019sm':'mcd19','2021swsh':'mcd21','2022swsh':'mcd22','2023sv':'mcd23','2024sv':'mcd24','ecard3':'ecard3'};
+const fixImage = c => {
+  if(!c || c.image) return c;
+  if(IMG_OVERRIDE[c.id]){ c.image = IMG_OVERRIDE[c.id]; return c; }
+  const sid = c.id.split('-')[0]; if(sid==='custom') return c;
+  const pid = PTCG_SET[sid] || sid.replace(/\./g,'');
+  let lid = String(c.localId||''); if(/^\d+$/.test(lid)) lid = String(parseInt(lid,10)); else if(sid==='ecard3') lid = lid.replace(/^([A-Z]+)0+(\d)/,'$1$2');
+  c.image = `https://images.pokemontcg.io/${pid}/${lid}`; c.imageGuess = true;   // může neexistovat → onerror v UI
+  return c;
+};
 const img = (base, size='low') => !base ? '' : base.startsWith('data:') ? base : base.startsWith('https://images.pokemontcg.io/') ? (size==='high' ? base+'_hires.png' : base+'.png') : `${base}/${size}.webp`;
 const normNum = n => String(n ?? '').trim().replace(/^0+(?=\d)/,'').toUpperCase();
 function toast(m, ms=2500){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); }
@@ -314,7 +324,8 @@ async function loadSet(id){
   let d = cache.get('set_'+id);
   if(!d){ d = await tj(`${TCGDEX}/${S.lang}/sets/${id}`); cache.set('set_'+id, d, SET_TTL); }
   d.cards.forEach(fixImage);
-  d.cards.sort((a,b)=> (parseInt(a.localId)||9999) - (parseInt(b.localId)||9999) || a.localId.localeCompare(b.localId));
+  const nk = id => { const m=String(id).match(/\d+/); return m ? parseInt(m[0],10) : 9999; }; const pk = id => String(id).replace(/\d+.*$/,'');
+  d.cards.sort((a,b)=> pk(a.localId).localeCompare(pk(b.localId)) || nk(a.localId)-nk(b.localId) || a.localId.localeCompare(b.localId));
   S.setCards[id] = d; return d;
 }
 async function loadCard(id, force=false){
@@ -606,7 +617,7 @@ function renderScanRows(){
       <div class="top">
         <div class="pics">
           <div><img src="${r.photo||''}" alt=""><div class="cap">tvoje fotka</div></div>
-          ${c?`<div>${c.image?`<img src="${img(c.image,'high')}" onerror="this.style.visibility='hidden'">`:`<div class="noimg" style="width:150px;height:210px">bez obrázku<br>v katalogu</div>`}<div class="cap">v katalogu</div></div>`:''}
+          ${c?`<div>${c.image?`<img src="${img(c.image,'high')}" onerror="this.outerHTML='<div class=noimg style=width:150px;height:210px>bez obrázku<br>v katalogu</div>'">`:`<div class="noimg" style="width:150px;height:210px">bez obrázku<br>v katalogu</div>`}<div class="cap">v katalogu</div></div>`:''}
         </div>
         <div class="grow">
           <div class="row"><input type="checkbox" data-a="sel" ${r.sel?'checked':''} style="width:auto"> <span class="t">${c?esc(c.name):esc(r.det.name||'Neznámá karta')}</span></div>
@@ -622,7 +633,7 @@ function renderScanRows(){
         ${r.pendingId?'':`<button class="btn small ghost" data-a="later">⏳ Přiřadit později</button>`}
         <button class="btn small ghost" data-a="custom">✏️ Přidat jako vlastní kartu</button>
       </div>
-      ${r.alts?.length?`<div class="small muted" style="margin-top:8px">${c?'Není to ona? Klepni na správnou kartu:':'Vyber správnou kartu:'}</div><div class="alts">${(c?[r.match]:[]).concat(r.alts).map((a,j)=>`<div class="alt ${a===r.match?'on':''}" data-a="altpick" data-j="${j}">${a.card.image?`<img src="${img(a.card.image)}" loading="lazy">`:`<div class="noimg">bez obrázku</div>`}<div class="n">${esc(a.card.name)}</div><div class="s">${esc(a.set?.name||a.set?.id)} · ${esc(a.card.localId)}</div></div>`).join('')}</div>`:''}
+      ${r.alts?.length?`<div class="small muted" style="margin-top:8px">${c?'Není to ona? Klepni na správnou kartu:':'Vyber správnou kartu:'}</div><div class="alts">${(c?[r.match]:[]).concat(r.alts).map((a,j)=>`<div class="alt ${a===r.match?'on':''}" data-a="altpick" data-j="${j}">${a.card.image?`<img src="${img(a.card.image)}" loading="lazy" onerror="this.outerHTML='<div class=noimg>bez obrázku</div>'">`:`<div class="noimg">bez obrázku</div>`}<div class="n">${esc(a.card.name)}</div><div class="s">${esc(a.set?.name||a.set?.id)} · ${esc(a.card.localId)}</div></div>`).join('')}</div>`:''}
       ${c?`<div class="sel">
         <select data-a="owner">${S.owners.map(o=>`<option ${r.owner===o?'selected':''}>${esc(o)}</option>`).join('')}</select>
         <select data-a="variant">${vopts}</select>
