@@ -197,10 +197,14 @@ a{color:var(--accent2)}
     <input id="sRate" type="number" step="0.1">
   </div>
   <div class="card">
-    <div style="font-weight:600">Rozpoznávání karet (Gemini)</div>
-    <div class="small muted">API klíč z <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. Bez klíče funguje jen ruční přidávání.</div>
-    <label class="f">Gemini API klíč</label>
+    <div style="font-weight:600">Rozpoznávání karet z fotek</div>
+    <label class="f">Model</label>
+    <select id="sProvider"><option value="claude">Claude Haiku (Anthropic)</option><option value="gemini">Gemini 2.5 Flash (Google)</option></select>
+    <label class="f">Claude API klíč <span class="muted">(<a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>)</span></label>
+    <input id="sClaude" type="password" placeholder="sk-ant-…">
+    <label class="f">Gemini API klíč <span class="muted">(<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>)</span></label>
     <input id="sGemini" type="password" placeholder="AIza…">
+    <div class="small muted" style="margin-top:6px">Stačí klíč k vybranému modelu. Bez klíče funguje jen ruční přidávání.</div>
   </div>
   <div class="card">
     <div style="font-weight:600">Vlastníci</div>
@@ -217,7 +221,7 @@ a{color:var(--accent2)}
   <button class="btn ghost" id="btnClearCache">Vymazat mezipaměť sad a cen</button>
   <div style="height:12px"></div>
   <button class="btn ghost" id="btnLogout">Odhlásit</button>
-  <div class="small muted" style="margin-top:16px">Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Google Gemini. Databáze: Supabase.</div>
+  <div class="small muted" style="margin-top:16px">Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Claude Haiku nebo Google Gemini. Databáze: Supabase.</div>
 </section>
 </main>
 
@@ -238,6 +242,7 @@ const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
 const GEMINI_MODEL = 'gemini-2.5-flash';
+const CLAUDE_MODEL = 'claude-haiku-4-5';
 const PRICE_TTL = 20*3600*1000;   // ceny čerstvé 20 h
 const SET_TTL   = 7*24*3600*1000; // seznam karet sady 7 dní
 
@@ -416,7 +421,7 @@ function showView(v){
 $('tabs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b){ showView(b.dataset.v); if(b.dataset.v==='sets'){ $('setDetail').classList.add('hidden'); $('setsHome').classList.remove('hidden'); } } });
 function fillOwnerSelects(){
   const opts = S.owners.map(o=>`<option>${esc(o)}</option>`).join('');
-  $('bulkOwner').innerHTML = opts; $('sOwners').value = S.owners.join(', '); $('sRate').value=S.rate; $('sGemini').value=S.settings.gemini_key||'';
+  $('bulkOwner').innerHTML = opts; $('sOwners').value = S.owners.join(', '); $('sRate').value=S.rate; $('sGemini').value=S.settings.gemini_key||''; $('sClaude').value=S.settings.claude_key||''; $('sProvider').value=S.settings.ai_provider||'claude';
 }
 function renderAll(){ renderCollection(); renderSets(); renderDash(); }
 
@@ -432,20 +437,35 @@ async function fileToJpegBase64(file, max=1600){
   c.getContext('2d').drawImage(src,0,0,c.width,c.height);
   const url = c.toDataURL('image/jpeg',0.85); return {b64:url.split(',')[1], url};
 }
-async function geminiRecognize(b64){
-  const key = S.settings.gemini_key; if(!key) throw new Error('Chybí Gemini API klíč (Nastavení).');
-  const prompt = `You are an expert Pokémon TCG card identifier. Look at the photo and list EVERY Pokémon trading card visible (there may be 1 to 12 cards, e.g. a binder page). For each card read the text printed on it.
+const RECOGNIZE_PROMPT = `You are an expert Pokémon TCG card identifier. Look at the photo and list EVERY Pokémon trading card visible (there may be 1 to 12 cards, e.g. a binder page). For each card read the text printed on it.
 Return ONLY a JSON array, one object per card, in reading order (left→right, top→bottom):
 {"name": card name exactly as printed (English if English card), "number": collector number as printed before the slash (keep leading zeros, e.g. "025"), "total": the number after the slash if present (e.g. 198) else null, "set_code": the 2-4 letter set abbreviation printed in the bottom corner if visible (e.g. "SVI","PAF","MEW","OBF"), else null, "set_name": set name if you can infer it from symbol/era, else null, "holo": true if the artwork is holographic/foil, "reverse": true if it is a reverse holo (the frame/background outside the artwork is foil, artwork is not), "first_edition": true if a "1st Edition" stamp is visible, "language": ISO code of the card language, "confidence": 0-1}
-If no card is visible return [].`;
-  const body = { contents:[{parts:[{text:prompt},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
+If no card is visible return []. Output the JSON array only, no prose, no markdown fences.`;
+function parseCardsJson(txt, who){
+  txt = String(txt||'').replace(/```json|```/g,'').trim(); const m = txt.match(/\[[\s\S]*\]/);
+  try{ const a = JSON.parse(m?m[0]:txt); return Array.isArray(a)?a:[]; }catch(e){ throw new Error(who+' vrátil nečitelnou odpověď'); }
+}
+async function geminiRecognize(b64){
+  const key = S.settings.gemini_key; if(!key) throw new Error('Chybí Gemini API klíč (Nastavení).');
+  const body = { contents:[{parts:[{text:RECOGNIZE_PROMPT},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
     generationConfig:{ temperature:0.1, responseMimeType:'application/json' } };
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!r.ok){ const t=await r.text(); throw new Error('Gemini '+r.status+': '+t.slice(0,200)); }
-  const j = await r.json(); let txt = j.candidates?.[0]?.content?.parts?.map(p=>p.text).join('')||'[]';
-  txt = txt.replace(/```json|```/g,'').trim(); const m = txt.match(/\[[\s\S]*\]/);
-  try{ return JSON.parse(m?m[0]:txt); }catch(e){ throw new Error('Gemini vrátil nečitelnou odpověď'); }
+  const j = await r.json(); return parseCardsJson(j.candidates?.[0]?.content?.parts?.map(p=>p.text).join(''), 'Gemini');
 }
+async function claudeRecognize(b64){
+  const key = S.settings.claude_key; if(!key) throw new Error('Chybí Claude API klíč (Nastavení).');
+  const body = { model: CLAUDE_MODEL, max_tokens: 2000, temperature: 0,
+    messages:[
+      {role:'user', content:[{type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}}, {type:'text', text:RECOGNIZE_PROMPT}]},
+      {role:'assistant', content:'['}   // prefill: odpověď začne rovnou JSON polem
+    ] };
+  const r = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
+  if(!r.ok){ let t=await r.text(); try{ t=JSON.parse(t).error?.message||t; }catch(e){} throw new Error('Claude '+r.status+': '+String(t).slice(0,200)); }
+  const j = await r.json(); const txt = '[' + (j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
+  return parseCardsJson(txt, 'Claude');
+}
+async function recognize(b64){ return (S.settings.ai_provider||'claude')==='gemini' ? geminiRecognize(b64) : claudeRecognize(b64); }
 const normName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
 function nameMatch(a,b){ a=normName(a); b=normName(b); if(!a||!b) return 0; if(a===b) return 1; if(a.includes(b)||b.includes(a)) return .8; return 0; }
 async function matchCard(det){
@@ -474,7 +494,7 @@ async function handleFiles(files){
       const {b64,url} = await fileToJpegBase64(arr[i]);
       const im=document.createElement('img'); im.src=url; $('thumbs').appendChild(im);
       $('scanProg').innerHTML=`<span class="spin"></span> Fotka ${i+1}/${arr.length}: rozpoznávám karty…`;
-      const dets = await geminiRecognize(b64);
+      const dets = await recognize(b64);
       if(!dets.length){ toast('Na fotce nebyla nalezena žádná karta'); }
       for(const det of dets){
         $('scanProg').innerHTML=`<span class="spin"></span> Fotka ${i+1}/${arr.length}: hledám „${esc(det.name||'?')} ${esc(det.number||'')}“…`;
@@ -673,9 +693,11 @@ $('btnSave').onclick = async ()=>{
     const owners=$('sOwners').value.split(',').map(s=>s.trim()).filter(Boolean); if(!owners.length) return toast('Zadej aspoň jednoho vlastníka');
     await rpc('pk_set_setting',{p_key:'owners',p_value:JSON.stringify(owners)});
     await rpc('pk_set_setting',{p_key:'gemini_key',p_value:$('sGemini').value.trim()});
+    await rpc('pk_set_setting',{p_key:'claude_key',p_value:$('sClaude').value.trim()});
+    await rpc('pk_set_setting',{p_key:'ai_provider',p_value:$('sProvider').value});
     await rpc('pk_set_setting',{p_key:'eur_czk',p_value:String(parseFloat($('sRate').value)||24.5)});
     if($('sPin').value){ await rpc('pk_set_setting',{p_key:'pin',p_value:$('sPin').value}); S.pin=$('sPin').value; localStorage.setItem('pk_pin',S.pin); $('sPin').value=''; }
-    S.owners=owners; S.settings.gemini_key=$('sGemini').value.trim(); S.rate=parseFloat($('sRate').value)||24.5; fillOwnerSelects(); renderAll(); toast('Nastavení uloženo ✔');
+    S.owners=owners; S.settings.gemini_key=$('sGemini').value.trim(); S.settings.claude_key=$('sClaude').value.trim(); S.settings.ai_provider=$('sProvider').value; S.rate=parseFloat($('sRate').value)||24.5; fillOwnerSelects(); renderAll(); toast('Nastavení uloženo ✔');
   }catch(e){ toast(e.message,5000); }
 };
 $('btnClearCache').onclick=()=>{ cache.clearPrefix('set_'); cache.clearPrefix('card_'); cache.clearPrefix('sets'); cache.clearPrefix('code_'); S.setCards={}; S.cardDetail={}; localStorage.removeItem('pk_lastRefresh'); toast('Mezipaměť vymazána'); };

@@ -10,21 +10,21 @@ Rodinná aplikace na evidenci sbírky Pokémon karet: skenování karet z fotek,
 | Databáze | Supabase projekt **JNO Private** (`dltopsftcmkxqrcobgrc`), tabulky `pk_*` | supabase.com |
 | Katalog karet + obrázky | TCGdex API (`api.tcgdex.net/v2/en`) – zdarma, bez klíče | – |
 | Ceny | Cardmarket (přes TCGdex, pole `pricing.cardmarket`, aktualizace denně, EUR) | – |
-| Rozpoznávání fotek | Google Gemini `gemini-2.5-flash` (klíč se ukládá v Nastavení → Supabase) | aistudio.google.com/apikey |
+| Rozpoznávání fotek | **Claude Haiku** (`claude-haiku-4-5`, přímo z prohlížeče přes api.anthropic.com) nebo Google Gemini `gemini-2.5-flash` – přepínač + klíče v Nastavení (uloženo v Supabase) | console.anthropic.com/settings/keys · aistudio.google.com/apikey |
 
 Přístup do databáze jde **jen přes RPC funkce chráněné PINem** (`pk_login`, `pk_get_all`, `pk_add_cards`, …). Tabulky mají RLS a anon role k nim nemá přímý přístup. PIN je uložený jako bcrypt hash v `pk_settings`.
 
 ## První spuštění
 
 1. Otevři appku, zadej PIN **1234**.
-2. Nastavení → vlož **Gemini API klíč**, uprav vlastníky (výchozí: Jiří, Jurášek, Společné), změň PIN. Ulož.
+2. Nastavení → vyber model (výchozí Claude Haiku) a vlož **Claude API klíč** (nebo Gemini), uprav vlastníky (výchozí: Jiří, Jurášek, Společné), změň PIN. Ulož.
 3. Na mobilu: Safari → Sdílet → *Přidat na plochu* (Android: Chrome → *Instalovat aplikaci*).
 
 ## Skenování
 
 - Vyfoť jednu kartu nebo celou stránku binderu (až 9–12 karet). Číslo karty (např. `025/198`) musí být čitelné – podle něj a podle kódu sady (`SVI`, `PAF`…) se karta páruje s katalogem.
 - Každou rozpoznanou kartu zkontroluj: vlastník, varianta (Normal / Holo / Reverse / 1st Ed.), počet. Když se spároval špatný tisk, vyber z nabídky „Jiná karta se stejným číslem“.
-- Karty, které Gemini nepřečte, přidáš ručně – jméno anglicky + číslo.
+- Karty, které model nepřečte, přidáš ručně – jméno anglicky + číslo.
 
 ## Sady
 
@@ -40,7 +40,7 @@ Přístup do databáze jde **jen přes RPC funkce chráněné PINem** (`pk_login
 
 ## Databáze (Supabase)
 
-- `pk_settings` – pin_hash, gemini_key, owners (JSON), tcgdex_lang, eur_czk
+- `pk_settings` – pin_hash, ai_provider (claude|gemini), claude_key, gemini_key, owners (JSON), tcgdex_lang, eur_czk
 - `pk_cards` – sbírka (card_id = TCGdex id, např. `sv01-001`; variant; condition; owner; qty)
 - `pk_prices` – denní snímky cen per karta+varianta
 - `pk_value_history` – denní hodnota sbírky
