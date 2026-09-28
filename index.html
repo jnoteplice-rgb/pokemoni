@@ -250,7 +250,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '2.4';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '2.5';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -480,6 +480,22 @@ async function claudeRecognize(b64, model=CLAUDE_MODEL){
   const j = await r.json(); const txt = '[' + (j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
   return parseCardsJson(txt, 'Claude');
 }
+async function askAnniversary(b64, cardName){
+  const key=S.settings.claude_key; if(!key) return null;
+  const q = `Look at the Pokémon card "${cardName}" in this photo. Celebrations (2021) Classic Collection reprints carry a small gold/yellow 25th-anniversary logo: a stylised "25" with a Pikachu silhouette, printed in the lower part of the card (near the bottom edge, next to the set symbol / copyright line, or at the lower right of the artwork). The original 1999-2012 printing does NOT have it. Does this card have that gold "25" logo? Answer with exactly one word: YES or NO.`;
+  const body={model:CLAUDE_MODEL,max_tokens:5,temperature:0,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:q}]}]};
+  try{ const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:Object.assign({'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, S.settings.claude_workspace?{'anthropic-workspace-id':S.settings.claude_workspace.trim()}:{}),body:JSON.stringify(body)});
+    if(!r.ok) return null; const j=await r.json(); const t=(j.content||[]).map(c=>c.text||'').join('').trim().toUpperCase(); return t.startsWith('YES') ? true : t.startsWith('NO') ? false : null; }catch(e){ return null; }
+}
+// když se karta spáruje na klasický tisk a existuje Celebrations reprint, ověřit logo cílenou otázkou
+async function verifyAnniversary(m, det, b64){
+  if(!m.match || det.anniversary_25 || m.match.set?.id==='cel25cc') return m;
+  const twin = m.alternatives.find(a=>a.set?.id==='cel25cc');
+  if(!twin) return m;
+  const yes = await askAnniversary(b64, det.name||m.match.card.name);
+  if(yes===true){ det.anniversary_25=true; return {match:twin, alternatives:[m.match, ...m.alternatives.filter(a=>a!==twin)]}; }
+  return m;
+}
 async function smartModel(){
   if(CLAUDE_SMART) return CLAUDE_SMART;
   try{
@@ -553,7 +569,7 @@ async function handleFiles(files){
       if(!dets.length){ toast('Na fotce nebyla nalezena žádná karta'); }
       for(const det of dets){
         $('scanProg').innerHTML=`<span class="spin"></span> Fotka ${i+1}/${arr.length}: hledám „${esc(det.name||'?')} ${esc(det.number||'')}“…`;
-        const m = await matchCard(det); let detail=null; if(m.match){ try{ detail=await loadCard(m.match.card.id);}catch(e){} }
+        let m = await matchCard(det); m = await verifyAnniversary(m, det, b64); let detail=null; if(m.match){ try{ detail=await loadCard(m.match.card.id);}catch(e){} }
         S.scanRows.push({det, photo:url, match:m.match, alts:m.alternatives, detail, variant: defaultVariant(det, detail), qty:1, owner:$('bulkOwner').value, cond:$('bulkCond').value, sel: !!m.match});
         renderScanRows();
       }
@@ -605,7 +621,7 @@ $('scanResults').addEventListener('click', async e=>{
       r.alts=list; r.altsFull=true; }catch(err){ toast(err.message); } renderScanRows(); return; }
   const sm=e.target.closest('button[data-a=smart]'); if(sm){ const r=S.scanRows[+sm.closest('.res').dataset.i]; if(!r.photo) return toast('Chybí fotka'); r.busy=true; renderScanRows();
     try{ const b64=r.photo.split(',')[1]; const dets=await recognize(b64, true); if(!dets.length) throw new Error('Chytřejší model na fotce kartu nenašel');
-      const det = dets.find(d=>nameMatch(d.name, r.det.name)>=0.5) || dets[0]; const m=await matchCard(det);
+      const det = dets.find(d=>nameMatch(d.name, r.det.name)>=0.5) || dets[0]; let m=await matchCard(det); m=await verifyAnniversary(m, det, b64);
       r.det=det; r.match=m.match; r.alts=m.alternatives; r.altsFull=false; r.detail=null; if(m.match){ try{ r.detail=await loadCard(m.match.card.id);}catch(e){} } r.variant=defaultVariant(det,r.detail); r.sel=!!m.match; r.smart=true;
       toast(m.match?`Opus: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} → ${m.match.card.name} (${m.match.set?.name})`:`Opus přečetl: ${det.name} ${det.number||''}${det.total?'/'+det.total:''} – vyber z nabídky`, 5000);
     }catch(err){ toast(err.message, 5000); } r.busy=false; renderScanRows(); return; }
