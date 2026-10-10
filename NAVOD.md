@@ -75,3 +75,12 @@ Statické soubory, žádný build. Push do repa → GitHub Pages (branch `main`,
 - **Celebrations (25. výročí)**: 4 holo karty, ~40 % balíčků s Classic Collection kartou, zlatý Mew 1:270. Booster 22,94 €, Mini Tin, Lance's Charizard V Tin, ETB, Collector Chest, Ultra-Premium Collection.
 - Hráči: k vlastníkům sbírky se přidávají hráči z tabulky `pk_game` (Verunka, Lili) + tlačítko ＋ pro nového hráče.
 - Pozor: u WotC sad TCGdex mapuje nehologramové Rare (Jungle 17–32, Fossil 16–30, Team Rocket 18–31, 71, 72, 80) na stejný Cardmarket produkt jako holo verzi → ve hře mají tyto karty cenu TCGplayer Unlimited × 0,9 a živé ceny jsou pro ně vypnuté (`noLive`). Stejná chyba se týká i reálné sbírky (ceny těchto karet jsou v appce nadhodnocené).
+
+### v4.0 (10. 10. 2026) – všechny anglické sady
+- **127 sad (1999–2026)** ze všech sérií (Base → Mega Evolution), bez japonských, promo, POP, McDonald's a TCG Pocket. Podsady (Shiny Vault, Trainer Gallery, Galarian Gallery, Radiant Collection, Classic Collection) jsou součástí mateřské sady.
+- Katalog (metadata, složení balíčku, produkty, obaly) je v `index.html` (`PACK_INDEX`), karty každé sady v `sets/<id>.json` – stahují se až při výběru sady (SW je pak cachuje). Generátor: `build_all.py` (TCGdex + tcgcsv/TCGplayer).
+- **Výběr sady**: tlačítko „Změnit sadu“ → hledání, naposledy použité, série rozbalovací (rok, počet sad), řádek sady = logo, rok, počet karet, cena boosteru, kolik karet už máš.
+- Ceny boosterů/produktů: TCGplayer market × 0,9 (Cardmarket trend u 30th, Shining Fates, Celebrations a Base série). 12 starších sad bez TCGplayer ceny má odhad (medián série) – `pricesNote`.
+- Pull rates: ručně měřené u 30th, Shining Fates, Celebrations, Base série; u ostatních **odhad podle éry** (`slots_for` v `build_all.py`): WotC 11 karet (holo 1/3), EX 9 karet (ex 1/9, gold star 1/72), DP/PL 10 (LV.X 1/12), HGSS (Prime 1/8, LEGEND 1/12), BW (EX 1/9, FA 1/36, secret 1/100), XY/SM (UR 1/7, secret 1/80–150), SWSH (V 1/8, VMAX/VSTAR 1/18, UR 1/30, secret 1/80, TG 1/9, GG 1/5, Radiant 1/8), SV/ME (ex 1/5, IR 1/9, UR 1/30, SIR 1/70, hyper 1/200, ACE 1/20).
+- Nová karta do virtuální sbírky má při otočení zelený štítek **NEW** (i v souhrnu a historii).
+- Stav hry v3: `shf` přejmenováno na `swsh4.5` (migrace v `gMigrate`).
