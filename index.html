@@ -365,7 +365,7 @@ details[open] summary::before{content:"▾ "}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '4.3';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '4.4';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1133,7 +1133,7 @@ function gRevealNext(){
   if(gHit(card) && navigator.vibrate) navigator.vibrate(gBig(card)?[60,40,120]:60);
   o.revealed++;
   if(!G.st.inv.some(it=>it.uid===c.uid)){ c.isNew = !G.st.inv.some(it=>it.id===c.id); G.st.inv.push({uid:c.uid, id:c.id, set:o.set, v:c.v, ts:o.ts, packEur:c.eur}); const pl=(G.st.pulls[o.set] ||= {}); pl[card.r]=(pl[card.r]||0)+1; }
-  if(o.revealed>=o.cards.length && !o.logged){ o.logged=true; G.st.hist.unshift({ts:Date.now(), set:o.set, t:'pack', cc:!!o.cc, price:o.price, ids:o.cards.map(x=>x.id), eur:o.cards.reduce((a,x)=>a+(x.eur||0),0), nw:o.cards.filter(x=>x.isNew).length}); if(G.st.hist.length>300) G.st.hist.length=300; }
+  if(o.revealed>=o.cards.length && !o.logged){ o.logged=true; if(G.st.packsBy){ G.st.packsBy[o.set]=(G.st.packsBy[o.set]||0)+1; } G.st.hist.unshift({ts:Date.now(), set:o.set, t:'pack', cc:!!o.cc, price:o.price, ids:o.cards.map(x=>x.id), eur:o.cards.reduce((a,x)=>a+(x.eur||0),0), nw:o.cards.filter(x=>x.isNew).length}); if(G.st.hist.length>300) G.st.hist.length=300; }
   const best=G.st.best; if(c.eur!=null && (!best || c.eur>best.eur)) G.st.best={id:c.id, v:c.v, eur:c.eur, ts:Date.now()};
   gSave();
   setTimeout(()=>{ gUpdateReveal(); gRenderWallet(); gRenderInv(); gRenderColl(); }, 380);
@@ -1205,9 +1205,11 @@ function gRenderStage(){
   $('gFlip').onclick=step; $('gNextCard').onclick=step;
 }
 /* ---- prodej ---- */
-function gSell(uids){
+function gN(it){ return it.n||1; }
+function gInvCount(){ return G.st.inv.reduce((a,it)=>a+gN(it),0); }
+function gSell(uids, one=false){
   const st=G.st; const set=new Set(uids); let sum=0, n=0; const ids=[];
-  st.inv = st.inv.filter(it=>{ if(!set.has(it.uid)) return true; const p=gPrice(gById(it.id), it.v); if(p==null) return true; sum+=p; n++; ids.push(it.id); return false; });
+  st.inv = st.inv.filter(it=>{ if(!set.has(it.uid)) return true; const p=gPrice(gById(it.id), it.v); if(p==null) return true; if(one && gN(it)>1){ it.n=gN(it)-1; sum+=p; n++; ids.push(it.id); return true; } sum+=p*gN(it); n+=gN(it); ids.push(it.id); return false; });
   if(!n) return toast('Není co prodat (nebo se ještě načítají ceny)');
   const net = Math.round(sum*(1-(st.fee||0)/100)*100)/100;
   st.balance = Math.round((st.balance+net)*100)/100; st.earned += net;
@@ -1255,14 +1257,14 @@ function gOpenOdds(){
 /* ---- vykreslení ---- */
 function gRenderAll(){ if(!G.st) return; gRenderPlayers(); gRenderWallet(); gRenderStage(); gRenderInv(); gRenderColl(); gRenderStats(); gRenderHist(); const s=gSet(); $('gNote').textContent = `${PACK_INDEX.length} anglických sad (1999–2026). Vybráno: ${s.name} (${s.abbr}, ${gYear(s)}). Booster: ${s.packEur} € – ${s.pricesNote||''}. Pull rates u sad bez vlastního měření jsou odhad podle éry.`; }
 function gRenderPlayers(){ $('gPlayers').innerHTML = gPlayers().map(o=>`<span class="chip ${G.player===o?'on':''}" data-p="${esc(o)}">${esc(o)}</span>`).join('') + `<span class="chip" data-add="1" title="Přidat hráče">＋</span>`; }
-function gInvValue(){ return G.st.inv.reduce((a,it)=>a+(gPrice(gById(it.id),it.v)||0),0); }
+function gInvValue(){ return G.st.inv.reduce((a,it)=>a+(gPrice(gById(it.id),it.v)||0)*gN(it),0); }
 function gRenderWallet(){
   const st=G.st; const inv=gInvValue(); const net = st.balance + inv - st.deposited;
   $('gWallet').innerHTML = `<div class="w main"><div class="l">Peněženka · ${esc(G.player)}</div><div class="v">${fmtKc(st.balance)}</div><div class="l">${fmtEur(st.balance)} · vloženo celkem ${fmtKc(st.deposited)}</div></div>
-    <div class="w"><div class="l">Karty v binderu</div><div class="v">${fmtKc(inv)}</div><div class="l">${st.inv.length} karet</div></div>
+    <div class="w"><div class="l">Karty v binderu</div><div class="v">${fmtKc(inv)}</div><div class="l">${gInvCount()} karet</div></div>
     <div class="w"><div class="l">Bilance (peníze + karty − vklady)</div><div class="v ${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmtKc(net)}</div><div class="l">${st.packs} balíčků · utraceno ${fmtKc(st.spent)}</div></div>`;
 }
-function gGroups(){ const groups={}; G.st.inv.forEach(it=>{ const k=it.id+'|'+it.v; (groups[k] ||= {c:gById(it.id), v:it.v, n:0, uids:[], ts:0}); groups[k].n++; groups[k].uids.push(it.uid); groups[k].ts=Math.max(groups[k].ts,it.ts); }); return Object.values(groups); }
+function gGroups(){ const groups={}; G.st.inv.forEach(it=>{ const k=it.id+'|'+it.v; (groups[k] ||= {c:gById(it.id), v:it.v, n:0, uids:[], ts:0}); groups[k].n+=gN(it); groups[k].uids.push(it.uid); groups[k].ts=Math.max(groups[k].ts,it.ts); }); return Object.values(groups); }
 function gRenderInv(){
   const st=G.st; let list=gGroups();
   if(G.sort==='value') list.sort((a,b)=>(gPrice(b.c,b.v)||0)-(gPrice(a.c,a.v)||0)); else if(G.sort==='new') list.sort((a,b)=>b.ts-a.ts); else list.sort((a,b)=>String(a.c.set).localeCompare(String(b.c.set))||String(a.c.n).localeCompare(String(b.c.n),undefined,{numeric:true}));
@@ -1275,7 +1277,7 @@ function gOwnedMap(){ const m={}; G.st.inv.forEach(it=>{ (m[it.id] ||= []).push(
 function gSubsets(setIds){ const out=[]; for(const id of (setIds||PACK_ORDER)){ const s=PACK_SETS[id]; if(!s) continue; for(const sub in s.subsets){ if(sub==='rgb') continue; out.push({set:id, sub, name:s.subsets[sub], cards:gCards(id).filter(c=>c.sub===sub), official:(s.official||{})[sub]}); } } return out; }
 function gRenderColl(){
   const own=gOwnedMap(); const ownedSets=[...new Set(G.st.inv.map(i=>i.set))]; const ids=[...new Set([G.set, ...ownedSets])].filter(id=>PACK_SETS[id]);
-  const rows=gSubsets(ids).map(ss=>{ const n=ss.cards.filter(c=>own[c.id]).length; if(!n && ss.set!==G.set) return ''; const val=ss.cards.reduce((a,c)=>a+(own[c.id]||[]).reduce((x,it)=>x+(gPrice(c,it.v)||0),0),0); const s=PACK_SETS[ss.set]; const tot=ss.cards.length||ss.official||0;
+  const rows=gSubsets(ids).map(ss=>{ const n=ss.cards.filter(c=>own[c.id]).length; if(!n && ss.set!==G.set) return ''; const val=ss.cards.reduce((a,c)=>a+(own[c.id]||[]).reduce((x,it)=>x+(gPrice(c,it.v)||0)*gN(it),0),0); const s=PACK_SETS[ss.set]; const tot=ss.cards.length||ss.official||0;
     return `<div class="set" data-ss="${ss.set}|${ss.sub}"><img src="${s.logo?s.logo+'.webp':''}" onerror="this.style.visibility='hidden'" loading="lazy"><div class="grow"><div class="t" style="font-weight:600">${esc(ss.name)}${ss.name!==s.name?` <span class="muted small">· ${esc(s.name)}</span>`:''}</div><div class="small muted">${n}/${tot} karet · ${fmtKc(val)}</div><div class="bar" style="margin-top:4px"><i style="width:${tot?Math.min(100,n/tot*100):0}%"></i></div></div><span class="muted">›</span></div>`; }).join('');
   $('gColl').innerHTML = rows || '<div class="muted small">Zatím žádné karty.</div>';
 }
@@ -1284,12 +1286,12 @@ async function gOpenSubset(setId, sub){
   $('gHome').classList.add('hidden'); const box=$('gSetDetail'); box.classList.remove('hidden');
   const render=(onlyMissing)=>{
     const n=ss.cards.filter(c=>own[c.id]).length; const missing=ss.cards.filter(c=>!own[c.id]); const missVal=missing.reduce((a,c)=>a+(gPrice(c)||0),0);
-    const val=ss.cards.reduce((a,c)=>a+(own[c.id]||[]).reduce((x,it)=>x+(gPrice(c,it.v)||0),0),0);
+    const val=ss.cards.reduce((a,c)=>a+(own[c.id]||[]).reduce((x,it)=>x+(gPrice(c,it.v)||0)*gN(it),0),0);
     box.innerHTML=`<div class="card"><div class="row"><button class="btn small ghost" id="gSetBack">‹ Zpět</button><img src="${s.logo?s.logo+'.webp':''}" style="height:34px" onerror="this.remove()"><div class="grow"><div style="font-weight:700">${esc(ss.name)} <span class="muted small">(virtuální)</span></div><div class="small muted">${esc(s.name)} · ${gYear(s)}</div></div></div>
       <div class="row" style="margin-top:10px"><div class="grow"><div class="big" style="font-size:22px">${n}/${ss.cards.length}</div><div class="small muted">máme · ${fmtKc(val)}</div></div><div class="grow"><div class="big" style="font-size:22px">${missing.length}</div><div class="small muted">chybí · tržní ≈ ${fmtKc(missVal)}</div></div></div>
       <div class="bar" style="margin-top:8px"><i style="width:${ss.cards.length?n/ss.cards.length*100:0}%"></i></div>
       <div class="chips"><span class="chip ${onlyMissing?'':'on'}" data-m="0">Všechny</span><span class="chip ${onlyMissing?'on':''}" data-m="1">Jen chybějící</span><button class="chip" id="gSetPlay">🎁 Otvírat tuhle sadu</button></div></div>
-      <div class="card"><div class="grid">${ss.cards.filter(c=>!onlyMissing||!own[c.id]).map(c=>{ const o=own[c.id]; const q=o?o.length:0; const p=gPrice(c, o?o[0].v:'normal'); return `<div class="gcard ${o?'':'missing'}" data-gid="${c.id}">${gImgTag(c,'low','loading="lazy"')}<span class="n">${esc(c.n)}</span>${q?`<span class="q">${q>1?'×'+q:'✓'}</span>`:''}<div class="p">${p!=null?fmtKc(p):esc(c.name)}</div></div>`; }).join('')}</div></div>`;
+      <div class="card"><div class="grid">${ss.cards.filter(c=>!onlyMissing||!own[c.id]).map(c=>{ const o=own[c.id]; const q=o?o.reduce((a,it)=>a+gN(it),0):0; const p=gPrice(c, o?o[0].v:'normal'); return `<div class="gcard ${o?'':'missing'}" data-gid="${c.id}">${gImgTag(c,'low','loading="lazy"')}<span class="n">${esc(c.n)}</span>${q?`<span class="q">${q>1?'×'+q:'✓'}</span>`:''}<div class="p">${p!=null?fmtKc(p):esc(c.name)}</div></div>`; }).join('')}</div></div>`;
     $('gSetBack').onclick=()=>{ box.classList.add('hidden'); $('gHome').classList.remove('hidden'); };
     $('gSetPlay').onclick=()=>{ box.classList.add('hidden'); $('gHome').classList.remove('hidden'); gSelectSet(setId); };
     box.querySelectorAll('.chip[data-m]').forEach(ch=>ch.onclick=()=>render(ch.dataset.m==='1'));
@@ -1300,7 +1302,7 @@ async function gOpenSubset(setId, sub){
 function gOpenMissing(id){ const c=gById(id); const p=gPrice(c); const e=gExpected(c.set)[c.r]||0; const per=e? e/gPools(c.set)[c.r].length : 0;
   openSheet(`<div class="row" style="align-items:flex-start">${gImgTag(c,'high','style="width:150px;border-radius:8px;filter:grayscale(.6)"')}<div class="grow"><div class="big" style="font-size:20px">${esc(c.name)}</div><div class="muted small">${esc(gSet(c.set).name)} · ${gNumHtml(c)}</div><div style="margin:6px 0"><span class="rb r-${c.r}">${RAR[c.r]||c.r}</span></div><div class="price" style="text-align:left">${fmtKc(p)} <span class="small muted">${fmtEur(p)}</span></div><div class="small muted">${esc(gPriceSrc(c))}</div><div class="small muted" style="margin-top:6px">Ještě ji nemáš. Šance na přesně tuhle kartu: ${per?'1 z '+Math.round(1/per)+' balíčků':'–'}.</div></div></div>`); }
 function gRenderStats(){
-  const st=G.st; const pl=st.pulls[G.set]||{}; const packs=st.hist.filter(h=>h.t==='pack' && h.set===G.set).length; const e=gLoaded()?gExpected():{};
+  const st=G.st; const pl=st.pulls[G.set]||{}; const packs=(st.packsBy||{})[G.set] ?? st.hist.filter(h=>h.t==='pack' && h.set===G.set).length; const e=gLoaded()?gExpected():{};
   const rows = RAR_ORDER.filter(r=>e[r]!=null && r!=='C' && r!=='U').map(r=>{ const n=pl[r]||0; return `<tr><td><span class="rb r-${r}">${RAR[r]||r}</span></td><td>${n}×</td><td class="muted">${packs?((n/packs)*100).toFixed(1):'0'} % <span class="small">(čekáno ${(e[r]*100).toFixed(e[r]<0.01?2:1)} %)</span></td></tr>`; }).join('');
   const best = st.best ? gById(st.best.id) : null;
   $('gStats').innerHTML = `<div class="row" style="margin-bottom:6px"><div class="grow">Celkem balíčků: <b>${st.packs}</b> · utraceno <b>${fmtKc(st.spent)}</b> · prodáno za <b>${fmtKc(st.earned)}</b> · sad ve sbírce: <b>${new Set(st.inv.map(i=>i.set)).size}</b></div></div>
@@ -1317,13 +1319,13 @@ function gRenderHist(){
     return ''; }).join('') : '<div class="muted small">Zatím nic.</div>';
 }
 function gOpenCard(id, v='normal'){
-  const c=gById(id); const its=G.st.inv.filter(it=>it.id===id && it.v===v); if(!its.length) return; const p=gPrice(c,v); const set=gSet(c.set)||{};
-  openSheet(`<div class="row" style="align-items:flex-start">${gImgTag(c,'high','style="width:150px;border-radius:8px"')}<div class="grow"><div class="big" style="font-size:20px">${esc(c.name)}</div><div class="muted small">${esc(set.name||'')} · ${gNumHtml(c)}</div><div style="margin:6px 0"><span class="rb r-${c.r}">${RAR[c.r]||c.r}</span>${gVar(v)}</div><div class="price" style="text-align:left">${fmtKc(p)} <span class="small muted">${fmtEur(p)} / ks</span></div><div class="small muted">${esc(gPriceSrc(c))}</div><div class="small muted" style="margin-top:4px">Máš ${its.length}× (vytaženo ${new Date(its[0].ts).toLocaleDateString('cs-CZ')})</div></div></div>
+  const c=gById(id); const its=G.st.inv.filter(it=>it.id===id && it.v===v); if(!its.length) return; const cnt=its.reduce((a,it)=>a+gN(it),0); const p=gPrice(c,v); const set=gSet(c.set)||{};
+  openSheet(`<div class="row" style="align-items:flex-start">${gImgTag(c,'high','style="width:150px;border-radius:8px"')}<div class="grow"><div class="big" style="font-size:20px">${esc(c.name)}</div><div class="muted small">${esc(set.name||'')} · ${gNumHtml(c)}</div><div style="margin:6px 0"><span class="rb r-${c.r}">${RAR[c.r]||c.r}</span>${gVar(v)}</div><div class="price" style="text-align:left">${fmtKc(p)} <span class="small muted">${fmtEur(p)} / ks</span></div><div class="small muted">${esc(gPriceSrc(c))}</div><div class="small muted" style="margin-top:4px">Máš ${cnt}× (vytaženo ${new Date(its[0].ts).toLocaleDateString('cs-CZ')})</div></div></div>
     <div style="height:12px"></div><button class="btn" id="gcSell1">💸 Prodat 1 ks za ${fmtKc((p||0)*(1-(G.st.fee||0)/100))}</button>
-    ${its.length>1?`<div style="height:8px"></div><button class="btn secondary" id="gcSellAll">Prodat všech ${its.length} ks za ${fmtKc((p||0)*its.length*(1-(G.st.fee||0)/100))}</button>`:''}
+    ${cnt>1?`<div style="height:8px"></div><button class="btn secondary" id="gcSellAll">Prodat všech ${cnt} ks za ${fmtKc((p||0)*cnt*(1-(G.st.fee||0)/100))}</button>`:''}
     <div class="small muted" style="margin-top:10px"><a href="https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(c.name+' '+(set.abbr||'')+' '+c.n)}" target="_blank">Cardmarket ↗</a>${c.tp?` · <a href="https://www.tcgplayer.com/product/${c.tp}" target="_blank">TCGplayer ↗</a>`:''}</div>`);
-  $('gcSell1').onclick=()=>{ closeSheet(); gSell([its[0].uid]); };
-  if(its.length>1) $('gcSellAll').onclick=()=>{ closeSheet(); gSell(its.map(i=>i.uid)); };
+  $('gcSell1').onclick=()=>{ closeSheet(); gSell([its[0].uid], true); };
+  if(cnt>1) $('gcSellAll').onclick=()=>{ closeSheet(); gSell(its.map(i=>i.uid)); };
 }
 /* ---- živé ceny (TCGdex) – max 1× za 20 h, na pozadí, jen pro vybranou sadu ---- */
 async function gPrefetchPrices(force=false, onProgress){
@@ -1336,7 +1338,7 @@ async function gPrefetchPrices(force=false, onProgress){
 /* ---- události ---- */
 $('gPlayers').addEventListener('click', e=>{ const ch=e.target.closest('.chip'); if(!ch) return; if(ch.dataset.add){ const n=(prompt('Jméno nového hráče:')||'').trim(); if(!n) return; if(!G.players.includes(n)) G.players.push(n); gLoad(n).then(()=>gSave()); return; } if(ch.dataset.p!==G.player) gLoad(ch.dataset.p); });
 $('gDeposit').onclick=gOpenDeposit; $('gOdds').onclick=gOpenOdds; $('gSettings').onclick=gOpenSettings;
-$('gSellAll').onclick=()=>{ const v=gInvValue(); if(!G.st.inv.length) return; if(!confirm(`Prodat všech ${G.st.inv.length} karet za ${fmtKc(v*(1-(G.st.fee||0)/100))}?`)) return; gSell(G.st.inv.map(i=>i.uid)); };
+$('gSellAll').onclick=()=>{ const v=gInvValue(); if(!G.st.inv.length) return; if(!confirm(`Prodat všech ${gInvCount()} karet za ${fmtKc(v*(1-(G.st.fee||0)/100))}?`)) return; gSell(G.st.inv.map(i=>i.uid)); };
 $('gSellJunk').onclick=()=>{ const u=G.st.inv.filter(it=>{ const p=gPrice(gById(it.id),it.v); return p!=null && p<1; }).map(i=>i.uid); if(!u.length) return toast('Žádné karty pod 1 €'); gSell(u); };
 document.querySelectorAll('#v-packs .chip[data-gs]').forEach(ch=>ch.onclick=()=>{ G.sort=ch.dataset.gs; document.querySelectorAll('#v-packs .chip[data-gs]').forEach(x=>x.classList.toggle('on',x===ch)); gRenderInv(); });
 $('gInv').addEventListener('click', e=>{ const g=e.target.closest('.gcard'); if(g) gOpenCard(g.dataset.gid, g.dataset.v||'normal'); });
