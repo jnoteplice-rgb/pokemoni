@@ -98,6 +98,53 @@ canvas.chart{width:100%;height:140px;display:block}
 .res select,.res input{padding:7px 8px;font-size:13px}
 .sel{display:grid;grid-template-columns:1fr 1fr 60px;gap:6px;margin-top:8px}
 a{color:var(--accent2)}
+/* ---- Balíčky (hra) ---- */
+.wallet{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wallet .w{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px}
+.wallet .w .l{font-size:11px;color:var(--muted)}
+.wallet .w .v{font-size:18px;font-weight:700;margin-top:2px}
+.wallet .w.main{grid-column:1/-1;background:linear-gradient(135deg,#1e3a8a,#7c3aed);color:#fff;border:0}
+.wallet .w.main .l{color:rgba(255,255,255,.75)}
+.wallet .w.main .v{font-size:30px}
+.pos{color:var(--ok)}.neg{color:var(--accent)}
+.stage{position:relative;min-height:380px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:10px 0}
+.booster{width:190px;height:300px;border-radius:14px;background:linear-gradient(160deg,#facc15 0%,#f97316 35%,#7c3aed 70%,#1e3a8a 100%);box-shadow:0 12px 30px rgba(0,0,0,.35);position:relative;overflow:hidden;cursor:pointer;transition:transform .2s}
+.booster:active{transform:scale(.97)}
+.booster:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 6px,transparent 6px 18px)}
+.booster:after{content:"";position:absolute;left:0;right:0;top:22px;height:8px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.35) 0 4px,transparent 4px 8px)}
+.booster .bt{position:absolute;left:0;right:0;bottom:30px;text-align:center;color:#fff;font-weight:800;font-size:22px;text-shadow:0 2px 8px rgba(0,0,0,.5);line-height:1.1}
+.booster .bt small{display:block;font-size:12px;font-weight:600;opacity:.9;margin-top:4px}
+.booster .bs{position:absolute;top:46px;left:0;right:0;text-align:center;font-size:54px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.flip{width:230px;height:321px;perspective:1200px;cursor:pointer}
+.flip .in{position:relative;width:100%;height:100%;transition:transform .55s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip.on .in{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.flip .b{background:radial-gradient(circle at 50% 40%,#3b82f6 0,#1e3a8a 45%,#0f172a 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-weight:800;border:6px solid #e2e8f0}
+.flip .b .lg{font-size:40px;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.flip .b .sm{font-size:12px;opacity:.8;font-weight:600;margin-top:6px}
+.flip .f{transform:rotateY(180deg);background:var(--line)}
+.flip .f img{width:100%;height:100%;object-fit:cover;display:block}
+.flip.hit .f{box-shadow:0 0 0 4px #fde68a,0 0 30px 8px rgba(250,204,21,.55)}
+.flip.hit2 .f{box-shadow:0 0 0 4px #f0abfc,0 0 36px 10px rgba(217,70,239,.7);animation:glow 1.4s ease-in-out infinite alternate}
+@keyframes glow{from{filter:brightness(1)}to{filter:brightness(1.18)}}
+.reveal{text-align:center;min-height:74px}
+.reveal .nm{font-weight:800;font-size:19px}
+.reveal .pr{font-size:24px;font-weight:800;margin-top:2px}
+.reveal .pr .eur{font-size:13px;color:var(--muted);font-weight:500;margin-left:6px}
+.rb{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--chip);margin-top:4px}
+.rb.r-C{background:#e5e7eb;color:#374151}.rb.r-R{background:#bfdbfe;color:#1e3a8a}.rb.r-PR{background:#fef08a;color:#713f12}.rb.r-RR{background:#c7d2fe;color:#312e81}
+.rb.r-IR{background:#bbf7d0;color:#14532d}.rb.r-SIR{background:linear-gradient(90deg,#f0abfc,#fde68a);color:#4a044e}.rb.r-FUR{background:linear-gradient(90deg,#67e8f9,#a5b4fc);color:#083344}.rb.r-CC{background:linear-gradient(90deg,#fde68a,#fbbf24);color:#78350f}.rb.r-RGB{background:linear-gradient(90deg,#f87171,#4ade80,#60a5fa);color:#fff}
+.strip{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+.strip .s{width:52px;text-align:center;font-size:10px;color:var(--muted)}
+.strip .s img{width:52px;aspect-ratio:63/88;object-fit:cover;border-radius:4px;display:block;background:var(--line)}
+.strip .s.q{opacity:.35}
+.strip .s.hit img{box-shadow:0 0 0 2px #fbbf24}
+.ptotal{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.odds td{padding:4px 6px;border-bottom:1px solid var(--line);font-size:13px}
+.odds td:last-child,.odds td:nth-child(2){text-align:right;white-space:nowrap}
+.gcard .rp{position:absolute;bottom:0;left:0;right:0;font-size:10px;background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;text-align:center}
+.hist .h{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.hist .h:last-child{border-bottom:0}
 .hidden{display:none!important}
 </style>
 </head>
@@ -201,6 +248,36 @@ a{color:var(--accent2)}
   <div class="card"><div style="font-weight:600">⭐ Wishlist</div><div id="dWish"></div></div>
 </section>
 
+<!-- BALICKY (hra) -->
+<section id="v-packs" class="view">
+  <div class="chips" id="gPlayers"></div>
+  <div class="card">
+    <div class="wallet" id="gWallet"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn secondary grow" id="gDeposit">💰 Vložit peníze</button>
+      <button class="btn ghost small" id="gOdds">ℹ️ Šance</button>
+      <button class="btn ghost small" id="gSettings">⚙️</button>
+    </div>
+  </div>
+  <div class="card" id="gStageCard">
+    <div class="stage" id="gStage"></div>
+  </div>
+  <div class="card">
+    <div class="row"><div class="grow" style="font-weight:600">📒 Binder (vytažené karty) <span class="muted small" id="gInvInfo"></span></div><button class="btn small secondary" id="gSellAll">Prodat vše</button></div>
+    <div class="chips" style="margin:8px 0 4px"><span class="chip on" data-gs="value">Nejcennější</span><span class="chip" data-gs="new">Nejnovější</span><span class="chip" data-gs="num">Podle čísla</span><button class="chip" id="gSellJunk">Prodat vše pod 1 €</button></div>
+    <div class="grid" id="gInv"></div>
+  </div>
+  <div class="card">
+    <div style="font-weight:600">📊 Statistika hráče</div>
+    <div id="gStats" class="small" style="margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <div style="font-weight:600">🕘 Historie</div>
+    <div id="gHist" class="hist"></div>
+  </div>
+  <div class="small muted" id="gNote" style="margin:4px 0 12px"></div>
+</section>
+
 <!-- NASTAVENI -->
 <section id="v-settings" class="view">
   <div class="card">
@@ -237,7 +314,7 @@ a{color:var(--accent2)}
   <button class="btn ghost" id="btnClearCache">Vymazat mezipaměť sad a cen</button>
   <div style="height:12px"></div>
   <button class="btn ghost" id="btnLogout">Odhlásit</button>
-  <div class="small muted" style="margin-top:16px">Verze appky <b id="ver2"></b>. Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Claude Sonnet (na vyžádání Opus) nebo Google Gemini. Databáze: Supabase.</div>
+  <div class="small muted" style="margin-top:16px">Verze appky <b id="ver2"></b>. Data: TCGdex (karty, obrázky) a Cardmarket (ceny raw karet v EUR, aktualizace denně). Rozpoznávání: Claude Sonnet (na vyžádání Opus) nebo Google Gemini. Databáze: Supabase. Hra Balíčky: pull rates podle PokeBeach/TCGplayer, ceny karet TCGplayer market ×0,9 (snímek) nebo Cardmarket trend.</div>
 </section>
 </main>
 
@@ -246,6 +323,7 @@ a{color:var(--accent2)}
   <button data-v="coll"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="12" height="17" rx="2"/><path d="M8 7h4M8 11h4"/><path d="M16 6h2a2 2 0 0 1 2 2v12"/></svg>Sbírka</button>
   <button data-v="sets"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Sady</button>
   <button data-v="dash"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16V10M11 16V6M16 16v-4"/></svg>Přehled</button>
+  <button data-v="packs"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 13h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zm0 0c2-4 6-4 6-1.5S14 8 12 8z"/></svg>Balíčky</button>
   <button data-v="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Nastavení</button>
 </nav>
 
@@ -254,7 +332,7 @@ a{color:var(--accent2)}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '3.1';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '3.2';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -447,6 +525,7 @@ async function boot(){
   }catch(e){ toast('Načtení selhalo: '+e.message, 5000); }
   $('hdrRight').textContent='';
   fillOwnerSelects(); renderAll(); updatePriceInfo(); renderPending();
+  if(S.view==='packs') gEnter();
   const last = +localStorage.getItem('pk_lastRefresh');
   if(navigator.onLine && Date.now()-last > PRICE_TTL && S.cards.length) refreshCollectionPrices();
 }
@@ -457,8 +536,9 @@ function showView(v){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.v===v));
   $('tabs').style.display = v==='login' ? 'none' : 'flex';
   if(v!=='login') localStorage.setItem('pk_view', v);
-  const titles={scan:'Skenovat karty',coll:'Sbírka',sets:'Sady',dash:'Přehled',settings:'Nastavení',login:'Pokémoni'};
+  const titles={scan:'Skenovat karty',coll:'Sbírka',sets:'Sady',packs:'Otvírání balíčků',dash:'Přehled',settings:'Nastavení',login:'Pokémoni'};
   $('title').textContent = titles[v]||'Pokémoni';
+  if(v==='packs' && S.pin && typeof gEnter==='function') gEnter();
 }
 $('tabs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b){ showView(b.dataset.v); if(b.dataset.v==='sets'){ $('setDetail').classList.add('hidden'); $('setsHome').classList.remove('hidden'); } } });
 function fillOwnerSelects(){
@@ -878,6 +958,233 @@ $('btnSave').onclick = async ()=>{
 };
 $('btnClearCache').onclick=()=>{ cache.clearPrefix('set_'); cache.clearPrefix('card_'); cache.clearPrefix('sets'); cache.clearPrefix('code_'); S.setCards={}; S.cardDetail={}; localStorage.removeItem('pk_lastRefresh'); toast('Mezipaměť vymazána'); };
 $('btnLogout').onclick=()=>{ localStorage.removeItem('pk_pin'); S.pin=''; pinBuf=''; $('dots').textContent=''; showView('login'); };
+
+/* ===================== BALÍČKY – hra na otvírání boosterů ===================== */
+// Data sady: karty + vzácnosti (TCGdex) + snímek cen TCGplayer market (USD) z 10. 10. 2026.
+// Cena karty ve hře = stejná metrika jako sbírka: Cardmarket trend (přes TCGdex), když chybí → TCGplayer market × 0,9.
+const PACK_SETS = {"30th": {"id":"30th","name":"30th Celebration","abbr":"30C","serie":"Mega Evolution","release":"2026-09-16","snapshot":"2026-10-10","packUsd":12.63,"bundleUsd":68.33,"cards":[{"id":"30th-001","n":"001","name":"Exeggcute","r":"C","img":"https://assets.tcgdex.net/en/me/30th/001","usd":0.18,"tp":716435},{"id":"30th-002","n":"002","name":"Alolan Exeggutor","r":"C","img":"https://assets.tcgdex.net/en/me/30th/002","usd":0.13,"tp":716436},{"id":"30th-003","n":"003","name":"Volbeat","r":"C","img":"https://assets.tcgdex.net/en/me/30th/003","usd":0.19,"tp":716437},{"id":"30th-004","n":"004","name":"Illumise","r":"C","img":"https://assets.tcgdex.net/en/me/30th/004","usd":0.16,"tp":716438},{"id":"30th-005","n":"005","name":"Tropius","r":"C","img":"https://assets.tcgdex.net/en/me/30th/005","usd":0.14,"tp":716439},{"id":"30th-006","n":"006","name":"Cherubi","r":"C","img":"https://assets.tcgdex.net/en/me/30th/006","usd":0.18,"tp":716440},{"id":"30th-007","n":"007","name":"Cherrim","r":"C","img":"https://assets.tcgdex.net/en/me/30th/007","usd":0.24,"tp":716441},{"id":"30th-008","n":"008","name":"Vivillon","r":"C","img":"https://assets.tcgdex.net/en/me/30th/008","usd":0.18,"tp":716442},{"id":"30th-009","n":"009","name":"Vulpix","r":"C","img":"https://assets.tcgdex.net/en/me/30th/009","usd":0.19,"tp":716443},{"id":"30th-010","n":"010","name":"Ninetales","r":"C","img":"https://assets.tcgdex.net/en/me/30th/010","usd":0.21,"tp":716444},{"id":"30th-011","n":"011","name":"Moltres","r":"C","img":"https://assets.tcgdex.net/en/me/30th/011","usd":0.22,"tp":716445},{"id":"30th-012","n":"012","name":"Ho-Oh","r":"R","img":"https://assets.tcgdex.net/en/me/30th/012","usd":0.21,"tp":716446},{"id":"30th-013","n":"013","name":"Victini","r":"C","img":"https://assets.tcgdex.net/en/me/30th/013","usd":0.17,"tp":696830},{"id":"30th-014","n":"014","name":"Reshiram","r":"R","img":"https://assets.tcgdex.net/en/me/30th/014","usd":0.17,"tp":716447},{"id":"30th-015","n":"015","name":"Fuecoco ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/015","usd":0.38,"tp":716448},{"id":"30th-016","n":"016","name":"Slowpoke","r":"C","img":"https://assets.tcgdex.net/en/me/30th/016","usd":0.18,"tp":716449},{"id":"30th-017","n":"017","name":"Lapras","r":"C","img":"https://assets.tcgdex.net/en/me/30th/017","usd":0.22,"tp":716450},{"id":"30th-018","n":"018","name":"Articuno","r":"C","img":"https://assets.tcgdex.net/en/me/30th/018","usd":0.18,"tp":716451},{"id":"30th-019","n":"019","name":"Kyogre","r":"R","img":"https://assets.tcgdex.net/en/me/30th/019","usd":0.2,"tp":716452},{"id":"30th-020","n":"020","name":"Palkia","r":"R","img":"https://assets.tcgdex.net/en/me/30th/020","usd":0.17,"tp":716453},{"id":"30th-021","n":"021","name":"Greninja ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/021","usd":0.51,"tp":696676},{"id":"30th-022","n":"022","name":"Wishiwashi","r":"C","img":"https://assets.tcgdex.net/en/me/30th/022","usd":0.23,"tp":716454},{"id":"30th-023","n":"023","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/023","usd":0.87,"tp":712934},{"id":"30th-024","n":"024","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/024","usd":0.6,"tp":716309},{"id":"30th-025","n":"025","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/025","usd":0.59,"tp":712935},{"id":"30th-026","n":"026","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/026","usd":0.85,"tp":712936},{"id":"30th-027","n":"027","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/027","usd":1.16,"tp":716310},{"id":"30th-028","n":"028","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/028","usd":0.96,"tp":712937},{"id":"30th-029","n":"029","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/029","usd":0.75,"tp":716311},{"id":"30th-030","n":"030","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/030","usd":0.63,"tp":712938},{"id":"30th-031","n":"031","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/031","usd":0.77,"tp":716312},{"id":"30th-032","n":"032","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/032","usd":1.01,"tp":712939},{"id":"30th-033","n":"033","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/033","usd":0.83,"tp":712940},{"id":"30th-034","n":"034","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/034","usd":1.24,"tp":712941},{"id":"30th-035","n":"035","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/035","usd":1.0,"tp":716313},{"id":"30th-036","n":"036","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/036","usd":1.21,"tp":696680},{"id":"30th-037","n":"037","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/037","usd":0.74,"tp":696681},{"id":"30th-038","n":"038","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/038","usd":0.8,"tp":712942},{"id":"30th-039","n":"039","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/039","usd":0.94,"tp":712943},{"id":"30th-040","n":"040","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/040","usd":2.05,"tp":712944},{"id":"30th-041","n":"041","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/041","usd":0.8,"tp":712945},{"id":"30th-042","n":"042","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/042","usd":0.81,"tp":712946},{"id":"30th-043","n":"043","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/043","usd":0.9,"tp":712947},{"id":"30th-044","n":"044","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/044","usd":0.75,"tp":712948},{"id":"30th-045","n":"045","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/045","usd":0.66,"tp":716314},{"id":"30th-046","n":"046","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/046","usd":0.68,"tp":716315},{"id":"30th-047","n":"047","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/047","usd":0.64,"tp":696682},{"id":"30th-048","n":"048","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/048","usd":0.82,"tp":716316},{"id":"30th-049","n":"049","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/049","usd":0.63,"tp":712949},{"id":"30th-050","n":"050","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/050","usd":0.82,"tp":712950},{"id":"30th-051","n":"051","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/051","usd":0.78,"tp":716317},{"id":"30th-052","n":"052","name":"Pikachu","r":"PR","img":"https://assets.tcgdex.net/en/me/30th/052","usd":0.67,"tp":716318},{"id":"30th-053","n":"053","name":"Pikachu ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/053","usd":1.15,"tp":712951},{"id":"30th-054","n":"054","name":"Pikachu ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/054","usd":1.39,"tp":712952},{"id":"30th-055","n":"055","name":"Zapdos","r":"C","img":"https://assets.tcgdex.net/en/me/30th/055","usd":0.22,"tp":716455},{"id":"30th-056","n":"056","name":"Zekrom","r":"R","img":"https://assets.tcgdex.net/en/me/30th/056","usd":0.18,"tp":716456},{"id":"30th-057","n":"057","name":"Zeraora","r":"C","img":"https://assets.tcgdex.net/en/me/30th/057","usd":0.23,"tp":696831},{"id":"30th-058","n":"058","name":"Toxel","r":"C","img":"https://assets.tcgdex.net/en/me/30th/058","usd":0.16,"tp":716457},{"id":"30th-059","n":"059","name":"Toxtricity","r":"C","img":"https://assets.tcgdex.net/en/me/30th/059","usd":0.23,"tp":716458},{"id":"30th-060","n":"060","name":"Toxtricity","r":"C","img":"https://assets.tcgdex.net/en/me/30th/060","usd":0.15,"tp":716459},{"id":"30th-061","n":"061","name":"Morpeko","r":"C","img":"https://assets.tcgdex.net/en/me/30th/061","usd":0.23,"tp":716460},{"id":"30th-062","n":"062","name":"Miraidon","r":"R","img":"https://assets.tcgdex.net/en/me/30th/062","usd":0.2,"tp":716461},{"id":"30th-063","n":"063","name":"Mewtwo","r":"R","img":"https://assets.tcgdex.net/en/me/30th/063","usd":0.32,"tp":716462},{"id":"30th-064","n":"064","name":"Mewtwo ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/064","usd":0.8,"tp":716463},{"id":"30th-065","n":"065","name":"Mew","r":"R","img":"https://assets.tcgdex.net/en/me/30th/065","usd":0.45,"tp":716464},{"id":"30th-066","n":"066","name":"Mew ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/066","usd":2.64,"tp":716465},{"id":"30th-067","n":"067","name":"Marill","r":"C","img":"https://assets.tcgdex.net/en/me/30th/067","usd":0.21,"tp":716466},{"id":"30th-068","n":"068","name":"Azumarill","r":"C","img":"https://assets.tcgdex.net/en/me/30th/068","usd":0.15,"tp":716467},{"id":"30th-069","n":"069","name":"Espeon","r":"C","img":"https://assets.tcgdex.net/en/me/30th/069","usd":0.28,"tp":696678},{"id":"30th-070","n":"070","name":"Espeon ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/070","usd":0.83,"tp":696834},{"id":"30th-071","n":"071","name":"Sylveon ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/071","usd":0.93,"tp":696677},{"id":"30th-072","n":"072","name":"Unown","r":"C","img":"https://assets.tcgdex.net/en/me/30th/072","usd":0.27,"tp":716468},{"id":"30th-073","n":"073","name":"Drifloon","r":"C","img":"https://assets.tcgdex.net/en/me/30th/073","usd":0.21,"tp":716469},{"id":"30th-074","n":"074","name":"Cresselia","r":"C","img":"https://assets.tcgdex.net/en/me/30th/074","usd":0.17,"tp":716470},{"id":"30th-075","n":"075","name":"Chandelure","r":"C","img":"https://assets.tcgdex.net/en/me/30th/075","usd":0.21,"tp":716471},{"id":"30th-076","n":"076","name":"Xerneas","r":"R","img":"https://assets.tcgdex.net/en/me/30th/076","usd":0.18,"tp":716472},{"id":"30th-077","n":"077","name":"Comfey","r":"C","img":"https://assets.tcgdex.net/en/me/30th/077","usd":0.15,"tp":716473},{"id":"30th-078","n":"078","name":"Cosmog","r":"C","img":"https://assets.tcgdex.net/en/me/30th/078","usd":0.19,"tp":716474},{"id":"30th-079","n":"079","name":"Cosmoem","r":"C","img":"https://assets.tcgdex.net/en/me/30th/079","usd":0.16,"tp":716475},{"id":"30th-080","n":"080","name":"Lunala","r":"R","img":"https://assets.tcgdex.net/en/me/30th/080","usd":0.21,"tp":716476},{"id":"30th-081","n":"081","name":"Gimmighoul","r":"C","img":"https://assets.tcgdex.net/en/me/30th/081","usd":0.16,"tp":716477},{"id":"30th-082","n":"082","name":"Groudon","r":"R","img":"https://assets.tcgdex.net/en/me/30th/082","usd":0.19,"tp":716478},{"id":"30th-083","n":"083","name":"Lucario","r":"C","img":"https://assets.tcgdex.net/en/me/30th/083","usd":0.17,"tp":716479},{"id":"30th-084","n":"084","name":"Seismitoad","r":"C","img":"https://assets.tcgdex.net/en/me/30th/084","usd":0.18,"tp":716480},{"id":"30th-085","n":"085","name":"Lycanroc","r":"C","img":"https://assets.tcgdex.net/en/me/30th/085","usd":0.2,"tp":716481},{"id":"30th-086","n":"086","name":"Koraidon","r":"R","img":"https://assets.tcgdex.net/en/me/30th/086","usd":0.16,"tp":716482},{"id":"30th-087","n":"087","name":"Nidoran♀","r":"C","img":"https://assets.tcgdex.net/en/me/30th/087","usd":0.12,"tp":716483},{"id":"30th-088","n":"088","name":"Nidorina","r":"C","img":"https://assets.tcgdex.net/en/me/30th/088","usd":0.15,"tp":716484},{"id":"30th-089","n":"089","name":"Alolan Meowth","r":"C","img":"https://assets.tcgdex.net/en/me/30th/089","usd":0.17,"tp":714359},{"id":"30th-090","n":"090","name":"Gengar ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/090","usd":1.78,"tp":716485},{"id":"30th-091","n":"091","name":"Umbreon","r":"C","img":"https://assets.tcgdex.net/en/me/30th/091","usd":0.36,"tp":696679},{"id":"30th-092","n":"092","name":"Umbreon ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/092","usd":1.11,"tp":696835},{"id":"30th-093","n":"093","name":"Murkrow","r":"C","img":"https://assets.tcgdex.net/en/me/30th/093","usd":0.19,"tp":716486},{"id":"30th-094","n":"094","name":"Scraggy","r":"C","img":"https://assets.tcgdex.net/en/me/30th/094","usd":0.2,"tp":716487},{"id":"30th-095","n":"095","name":"Zorua","r":"C","img":"https://assets.tcgdex.net/en/me/30th/095","usd":0.2,"tp":716488},{"id":"30th-096","n":"096","name":"Zoroark","r":"C","img":"https://assets.tcgdex.net/en/me/30th/096","usd":0.22,"tp":716489},{"id":"30th-097","n":"097","name":"Deino","r":"C","img":"https://assets.tcgdex.net/en/me/30th/097","usd":0.19,"tp":716490},{"id":"30th-098","n":"098","name":"Zweilous","r":"C","img":"https://assets.tcgdex.net/en/me/30th/098","usd":0.2,"tp":716491},{"id":"30th-099","n":"099","name":"Hydreigon","r":"C","img":"https://assets.tcgdex.net/en/me/30th/099","usd":0.18,"tp":716492},{"id":"30th-100","n":"100","name":"Yveltal","r":"R","img":"https://assets.tcgdex.net/en/me/30th/100","usd":0.22,"tp":716493},{"id":"30th-101","n":"101","name":"Galarian Meowth","r":"C","img":"https://assets.tcgdex.net/en/me/30th/101","usd":0.19,"tp":716494},{"id":"30th-102","n":"102","name":"Jirachi ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/102","usd":0.56,"tp":716495},{"id":"30th-103","n":"103","name":"Dialga","r":"R","img":"https://assets.tcgdex.net/en/me/30th/103","usd":0.22,"tp":716496},{"id":"30th-104","n":"104","name":"Ferrothorn","r":"C","img":"https://assets.tcgdex.net/en/me/30th/104","usd":0.17,"tp":716497},{"id":"30th-105","n":"105","name":"Solgaleo","r":"R","img":"https://assets.tcgdex.net/en/me/30th/105","usd":0.16,"tp":716498},{"id":"30th-106","n":"106","name":"Zacian","r":"R","img":"https://assets.tcgdex.net/en/me/30th/106","usd":0.22,"tp":716499},{"id":"30th-107","n":"107","name":"Zamazenta","r":"R","img":"https://assets.tcgdex.net/en/me/30th/107","usd":0.21,"tp":716500},{"id":"30th-108","n":"108","name":"Gholdengo","r":"C","img":"https://assets.tcgdex.net/en/me/30th/108","usd":0.19,"tp":716501},{"id":"30th-109","n":"109","name":"Salamence ex","r":"RR","img":"https://assets.tcgdex.net/en/me/30th/109","usd":0.48,"tp":716502},{"id":"30th-110","n":"110","name":"Jangmo-o","r":"C","img":"https://assets.tcgdex.net/en/me/30th/110","usd":0.15,"tp":716503},{"id":"30th-111","n":"111","name":"Hakamo-o","r":"C","img":"https://assets.tcgdex.net/en/me/30th/111","usd":0.18,"tp":716504},{"id":"30th-112","n":"112","name":"Kommo-o","r":"C","img":"https://assets.tcgdex.net/en/me/30th/112","usd":0.19,"tp":716505},{"id":"30th-113","n":"113","name":"Meowth","r":"C","img":"https://assets.tcgdex.net/en/me/30th/113","usd":0.17,"tp":714356},{"id":"30th-114","n":"114","name":"Kangaskhan","r":"C","img":"https://assets.tcgdex.net/en/me/30th/114","usd":0.19,"tp":716506},{"id":"30th-115","n":"115","name":"Ditto","r":"C","img":"https://assets.tcgdex.net/en/me/30th/115","usd":0.28,"tp":716507},{"id":"30th-116","n":"116","name":"Eevee","r":"C","img":"https://assets.tcgdex.net/en/me/30th/116","usd":0.25,"tp":714357},{"id":"30th-117","n":"117","name":"Eevee","r":"C","img":"https://assets.tcgdex.net/en/me/30th/117","usd":0.27,"tp":696832},{"id":"30th-118","n":"118","name":"Eevee","r":"C","img":"https://assets.tcgdex.net/en/me/30th/118","usd":0.35,"tp":696833},{"id":"30th-119","n":"119","name":"Snorlax","r":"C","img":"https://assets.tcgdex.net/en/me/30th/119","usd":0.28,"tp":716508},{"id":"30th-120","n":"120","name":"Igglybuff","r":"C","img":"https://assets.tcgdex.net/en/me/30th/120","usd":0.28,"tp":716509},{"id":"30th-121","n":"121","name":"Lugia","r":"R","img":"https://assets.tcgdex.net/en/me/30th/121","usd":0.29,"tp":716510},{"id":"30th-122","n":"122","name":"Hisuian Zorua","r":"C","img":"https://assets.tcgdex.net/en/me/30th/122","usd":0.2,"tp":716511},{"id":"30th-123","n":"123","name":"Hisuian Zoroark","r":"C","img":"https://assets.tcgdex.net/en/me/30th/123","usd":0.22,"tp":716512},{"id":"30th-124","n":"124","name":"Minior","r":"C","img":"https://assets.tcgdex.net/en/me/30th/124","usd":0.16,"tp":716513},{"id":"30th-125","n":"125","name":"Maushold","r":"C","img":"https://assets.tcgdex.net/en/me/30th/125","usd":0.29,"tp":716514},{"id":"30th-126","n":"126","name":"Poké Pad","r":"C","img":"https://assets.tcgdex.net/en/me/30th/126","usd":0.34,"tp":716515},{"id":"30th-127","n":"127","name":"Switch","r":"C","img":"https://assets.tcgdex.net/en/me/30th/127","usd":0.23,"tp":716516},{"id":"30th-128","n":"128","name":"Ultra Ball","r":"C","img":"https://assets.tcgdex.net/en/me/30th/128","usd":0.29,"tp":716517},{"id":"30th-129","n":"129","name":"Alolan Exeggutor","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/129","usd":1.92,"tp":716218},{"id":"30th-130","n":"130","name":"Moltres","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/130","usd":6.49,"tp":716219},{"id":"30th-131","n":"131","name":"Lapras","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/131","usd":6.05,"tp":696683},{"id":"30th-132","n":"132","name":"Articuno","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/132","usd":6.75,"tp":716220},{"id":"30th-133","n":"133","name":"Zapdos","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/133","usd":7.05,"tp":716221},{"id":"30th-134","n":"134","name":"Toxtricity","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/134","usd":2.75,"tp":716222},{"id":"30th-135","n":"135","name":"Morpeko","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/135","usd":5.5,"tp":716223},{"id":"30th-136","n":"136","name":"Drifloon","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/136","usd":2.68,"tp":696684},{"id":"30th-137","n":"137","name":"Chandelure","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/137","usd":2.39,"tp":716224},{"id":"30th-138","n":"138","name":"Lycanroc","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/138","usd":2.02,"tp":696685},{"id":"30th-139","n":"139","name":"Alolan Meowth","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/139","usd":7.68,"tp":714360},{"id":"30th-140","n":"140","name":"Scraggy","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/140","usd":1.29,"tp":716225},{"id":"30th-141","n":"141","name":"Galarian Meowth","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/141","usd":6.7,"tp":716226},{"id":"30th-142","n":"142","name":"Gholdengo","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/142","usd":1.69,"tp":716227},{"id":"30th-143","n":"143","name":"Kommo-o","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/143","usd":1.46,"tp":717621},{"id":"30th-144","n":"144","name":"Meowth","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/144","usd":9.97,"tp":714358},{"id":"30th-145","n":"145","name":"Hisuian Zorua","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/145","usd":5.0,"tp":696686},{"id":"30th-146","n":"146","name":"Maushold","r":"IR","img":"https://assets.tcgdex.net/en/me/30th/146","usd":11.73,"tp":716228},{"id":"30th-147","n":"147","name":"Fuecoco ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/147","usd":15.05,"tp":716229},{"id":"30th-148","n":"148","name":"Greninja ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/148","usd":21.14,"tp":716230},{"id":"30th-149","n":"149","name":"Pikachu ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/149","usd":53.45,"tp":712953},{"id":"30th-150","n":"150","name":"Pikachu ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/150","usd":60.77,"tp":712954},{"id":"30th-151","n":"151","name":"Mewtwo ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/151","usd":55.04,"tp":717603},{"id":"30th-152","n":"152","name":"Mew ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/152","usd":86.86,"tp":717605},{"id":"30th-153","n":"153","name":"Sylveon ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/153","usd":43.6,"tp":716231},{"id":"30th-154","n":"154","name":"Gengar ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/154","usd":74.99,"tp":717610},{"id":"30th-155","n":"155","name":"Jirachi ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/155","usd":48.66,"tp":716232},{"id":"30th-156","n":"156","name":"Salamence ex","r":"SIR","img":"https://assets.tcgdex.net/en/me/30th/156","usd":16.25,"tp":716233},{"id":"30th-157","n":"157","name":"Mewtwo ex","r":"FUR","img":"https://assets.tcgdex.net/en/me/30th/157","usd":47.02,"tp":696687},{"id":"30th-158","n":"158","name":"Mew ex","r":"FUR","img":"https://assets.tcgdex.net/en/me/30th/158","usd":64.08,"tp":696688},{"id":"30th-c-001","n":"4/102","name":"Charizard","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/714372_400w.jpg","usd":141.91,"tp":714372},{"id":"30th-c-002","n":"5/109","name":"Delcatty","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716156_400w.jpg","usd":4.49,"tp":716156},{"id":"30th-c-003","n":"11/113","name":"Metagross (Delta Species)","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716157_400w.jpg","usd":7.74,"tp":716157},{"id":"30th-c-004","n":"11/101","name":"Genesect EX (Team Plasma)","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716158_400w.jpg","usd":6.35,"tp":716158},{"id":"30th-c-005","n":"18/132","name":"Misty","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716159_400w.jpg","usd":6.4,"tp":716159},{"id":"30th-c-006","n":"19/109","name":"Dark Tyranitar","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716160_400w.jpg","usd":12.66,"tp":716160},{"id":"30th-c-007","n":"25/111","name":"Sneasel","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716161_400w.jpg","usd":5.02,"tp":716161},{"id":"30th-c-008","n":"33/181","name":"Pikachu & Zekrom GX","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/714373_400w.jpg","usd":26.98,"tp":714373},{"id":"30th-c-009","n":"41/122","name":"Greninja BREAK","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716162_400w.jpg","usd":10.45,"tp":716162},{"id":"30th-c-010","n":"43/146","name":"Uxie","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716163_400w.jpg","usd":5.04,"tp":716163},{"id":"30th-c-011","n":"47/127","name":"Crobat G","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716191_400w.jpg","usd":5.17,"tp":716191},{"id":"30th-c-012","n":"050/185","name":"Raikou","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716192_400w.jpg","usd":9.71,"tp":716192},{"id":"30th-c-013","n":"57/111","name":"Buzzwole GX","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716193_400w.jpg","usd":4.11,"tp":716193},{"id":"30th-c-014","n":"58/102","name":"Pikachu","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716194_400w.jpg","usd":21.33,"tp":716194},{"id":"30th-c-015","n":"69/132","name":"Erika's Jigglypuff","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716195_400w.jpg","usd":8.96,"tp":716195},{"id":"30th-c-016","n":"85/124","name":"Rayquaza EX","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716196_400w.jpg","usd":21.12,"tp":716196},{"id":"30th-c-017","n":"89/149","name":"Solgaleo GX","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716197_400w.jpg","usd":6.51,"tp":716197},{"id":"30th-c-018","n":"94/102","name":"Gengar (Prime)","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716198_400w.jpg","usd":53.7,"tp":716198},{"id":"30th-c-019","n":"99/102","name":"Darkrai & Cresselia Legend (Top)","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716199_400w.jpg","usd":21.25,"tp":716199},{"id":"30th-c-020","n":"100/102","name":"Darkrai & Cresselia Legend (Bottom)","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716200_400w.jpg","usd":20.98,"tp":716200},{"id":"30th-c-021","n":"101/101","name":"N","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716202_400w.jpg","usd":14.41,"tp":716202},{"id":"30th-c-022","n":"106/106","name":"Palkia LV.X","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716203_400w.jpg","usd":10.17,"tp":716203},{"id":"30th-c-023","n":"106/160","name":"M Gardevoir EX","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716204_400w.jpg","usd":11.18,"tp":716204},{"id":"30th-c-024","n":"106/105","name":"Shining Celebi","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716205_400w.jpg","usd":24.69,"tp":716205},{"id":"30th-c-025","n":"108/115","name":"Scizor ex","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716206_400w.jpg","usd":10.01,"tp":716206},{"id":"30th-c-026","n":"114/264","name":"Mew VMAX","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716207_400w.jpg","usd":18.85,"tp":716207},{"id":"30th-c-027","n":"123/172","name":"Arceus VSTAR","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716208_400w.jpg","usd":7.64,"tp":716208},{"id":"30th-c-028","n":"138/202","name":"Zacian V","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716209_400w.jpg","usd":7.1,"tp":716209},{"id":"30th-c-029","n":"149/147","name":"Lugia","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/714386_400w.jpg","usd":199.65,"tp":714386},{"id":"30th-c-030","n":"203/193","name":"Magikarp","r":"CC","img":"https://tcgplayer-cdn.tcgplayer.com/product/716210_400w.jpg","usd":85.05,"tp":716210},{"id":"tp-717609","n":"B/RGB","name":"Mew (B/RGB)","r":"RGB","img":"https://tcgplayer-cdn.tcgplayer.com/product/717609_400w.jpg","usd":1702.5,"tp":717609},{"id":"tp-717608","n":"G/RGB","name":"Mew (G/RGB)","r":"RGB","img":"https://tcgplayer-cdn.tcgplayer.com/product/717608_400w.jpg","usd":3738.75,"tp":717608},{"id":"tp-717607","n":"R/RGB","name":"Mew (R/RGB)","r":"RGB","img":"https://tcgplayer-cdn.tcgplayer.com/product/717607_400w.jpg","usd":6000.27,"tp":717607}]}};
+PACK_SETS['30th'].packEur = 12.02;   // Cardmarket "Price Trend" boosteru 10. 10. 2026 (od 8,15 €, 7denní průměr 12,34 €)
+const RAR = { C:'Common', R:'Rare (holo)', PR:'Pikachu Rare', RR:'Double Rare (ex)', IR:'Illustration Rare', SIR:'Special Illustration Rare', FUR:'Futuristic Rare', CC:'Classic Collection', RGB:'RGB Mew (secret)' };
+const RAR_ORDER = ['C','R','PR','RR','IR','CC','SIR','FUR','RGB'];
+// Šance na „hit“ slot (zdroj: PokeBeach / TCGplayer 3000 balíčků, tcgtalk 652 balíčků, pullrates.com) – zbytek = obyčejná holo Rare
+const HIT_ODDS = [['RGB',1/4000],['FUR',1/103],['SIR',0.052],['CC',0.098],['IR',0.184],['RR',0.22]];
+const RARE_IN_SLOT3 = 0.35;   // 3. karta: 35 % šance na Rare místo Common
+const G = { set:'30th', player:null, st:null, saveT:null, sort:'value', busy:false };
+const gSet = () => PACK_SETS[G.set];
+const gCardsBy = (()=>{ let m=null; return ()=>{ if(!m){ m={}; gSet().cards.forEach(c=>(m[c.r] ||= []).push(c)); } return m; }; })();
+const gById = (()=>{ let m=null; return id=>{ if(!m){ m={}; gSet().cards.forEach(c=>m[c.id]=c); } return m[id]; }; })();
+function gDefault(){ return {v:1, balance:0, deposited:0, spent:0, earned:0, packs:0, inv:[], hist:[], pulls:{}, open:null, packEur:null, fee:0, best:null}; }
+function gImg(c, size='high'){ if(!c || !c.img) return ''; return c.img.includes('tcgplayer-cdn') ? c.img : img(c.img, size); }
+function gPrice(c){   // EUR za kus – živá cena (Cardmarket trend přes TCGdex), jinak snímek TCGplayer × 0,9
+  if(!c) return null;
+  const d = S.cardDetail[c.id]; if(d){ const p = priceFromDetail(d,'normal'); if(p!=null) return p; }
+  return c.usd!=null ? Math.round(c.usd*0.9*100)/100 : null;
+}
+function gPriceSrc(c){ const d=S.cardDetail[c.id]; return (d && d.pricing?.cardmarket && priceFromDetail(d,'normal')!=null) ? 'Cardmarket trend' : 'TCGplayer market ×0,9 (snímek '+new Date(gSet().snapshot).toLocaleDateString('cs-CZ')+')'; }
+function gPackPrice(){ return G.st?.packEur || gSet().packEur; }
+const gHit = r => ['IR','SIR','FUR','CC','RGB'].includes(r);
+const gBig = r => ['SIR','FUR','CC','RGB'].includes(r);
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---- uložení / načtení (Supabase + záloha v localStorage) ---- */
+async function gLoad(player){
+  G.player = player; localStorage.setItem('pk_game_player', player);
+  let st=null;
+  try{ const r = await rpc('pk_game_get',{p_player:player}); if(r && r.v) st=r; }catch(e){ toast('Hra: načítám ze zálohy v telefonu ('+e.message+')'); }
+  if(!st){ try{ st = JSON.parse(localStorage.getItem('pk_game_'+player)); }catch(e){} }
+  G.st = Object.assign(gDefault(), st||{}); gRenderAll();
+}
+function gSave(){
+  if(!G.st) return; try{ localStorage.setItem('pk_game_'+G.player, JSON.stringify(G.st)); }catch(e){}
+  clearTimeout(G.saveT); G.saveT = setTimeout(()=>{ rpc('pk_game_save',{p_player:G.player, p_state:G.st}).catch(e=>toast('Hra se neuložila na server: '+e.message)); }, 700);
+}
+function gHist(ev){ G.st.hist.unshift(Object.assign({ts:Date.now()}, ev)); if(G.st.hist.length>200) G.st.hist.length=200; }
+
+/* ---- generování balíčku (5 karet; 6. foil energie se nesimuluje) ---- */
+function gPick(arr, used){ let c, n=0; do{ c=arr[Math.floor(Math.random()*arr.length)]; n++; }while(used.has(c.id) && n<50); used.add(c.id); return c; }
+function gGenPack(){
+  const by=gCardsBy(), used=new Set();
+  const cards=[ gPick(by.C,used), gPick(by.C,used), Math.random()<RARE_IN_SLOT3 ? gPick(by.R,used) : gPick(by.C,used) ];
+  const pika = gPick(by.PR, used);
+  let u=Math.random(), acc=0, hitR='R'; for(const [r,p] of HIT_ODDS){ acc+=p; if(u<acc){ hitR=r; break; } }
+  const hit = gPick(by[hitR], used);
+  return [...cards, pika, hit].map(c=>({uid:uid(), id:c.id, eur:gPrice(c), src:gPriceSrc(c)}));
+}
+function gBuyPack(){
+  const st=G.st; if(!st) return; if(st.open && st.open.revealed < st.open.cards.length) return toast('Nejdřív dootvírej rozdělaný balíček');
+  const price=gPackPrice();
+  if(st.balance + 1e-9 < price) return toast(`Nemáš dost peněz (balíček stojí ${fmtKc(price)}). Vlož vklad.`, 4000);
+  st.balance = Math.round((st.balance-price)*100)/100; st.spent += price; st.packs++;
+  const cards = gGenPack(); const ts=Date.now();
+  st.open = {cards, revealed:0, price, ts}; gPreload(cards);
+  cards.forEach(c=>{ st.pulls[gById(c.id).r] = (st.pulls[gById(c.id).r]||0)+1; st.inv.push({uid:c.uid, id:c.id, ts, packEur:c.eur}); });
+  gHist({t:'pack', price, ids:cards.map(c=>c.id), eur:cards.reduce((a,c)=>a+(c.eur||0),0)});
+  gSave(); gRenderAll(); setTimeout(()=>$('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+function gPreload(cards){ cards.forEach(c=>{ const i=new Image(); i.src=gImg(gById(c.id)); }); }
+function gRevealNext(){
+  const o=G.st?.open; if(!o || o.revealed>=o.cards.length) return;
+  const el=$('gFlip'); if(!el || el.classList.contains('on')) return;
+  const c=o.cards[o.revealed], card=gById(c.id);
+  el.classList.add('on'); if(gBig(card.r)) el.classList.add('hit2'); else if(gHit(card.r)) el.classList.add('hit');
+  if(gHit(card.r) && navigator.vibrate) navigator.vibrate(gBig(card.r)?[60,40,120]:60);
+  o.revealed++;
+  const best=G.st.best; if(c.eur!=null && (!best || c.eur>best.eur)) G.st.best={id:c.id, eur:c.eur, ts:Date.now()};
+  gSave();
+  setTimeout(()=>{ gUpdateReveal(); gRenderWallet(); }, 420);
+}
+function gStripHtml(o){ return o.cards.map((c,j)=>{ const k=gById(c.id); const seen=j<o.revealed; return `<div class="s ${seen?'':'q'} ${seen&&gHit(k.r)?'hit':''}">${seen?`<img src="${gImg(k,'low')}">`:'<div style="width:52px;aspect-ratio:63/88;border-radius:4px;background:var(--line)"></div>'}${seen?(c.eur!=null?fmtKc(c.eur):'–'):'?'}</div>`; }).join(''); }
+function gTotalHtml(o){ const tot=o.cards.slice(0,o.revealed).reduce((a,c)=>a+(c.eur||0),0); return `<div><div class="small muted">Hodnota balíčku</div><div style="font-weight:700">${fmtKc(tot)} <span class="small muted">${fmtEur(tot)}</span></div></div><div style="text-align:right"><div class="small muted">Zaplaceno ${fmtKc(o.price)}</div><div class="${tot-o.price>=0?'pos':'neg'}" style="font-weight:700">${tot-o.price>=0?'+':''}${fmtKc(tot-o.price)}</div></div>`; }
+function gCardInfoHtml(c){ const card=gById(c.id); const set=gSet(); const tot=card.r==='CC'||card.r==='RGB'?'':'/128';
+  return `<div class="nm">${esc(card.name)} <span class="muted small">${esc(card.n)}${tot}</span></div><span class="rb r-${card.r}">${gHit(card.r)?'✨ ':''}${RAR[card.r]}</span><div class="pr">${c.eur!=null?fmtKc(c.eur):'bez ceny'}<span class="eur">${fmtEur(c.eur)}</span></div>`; }
+function gUpdateReveal(){
+  const o=G.st?.open; if(!o || !$('gReveal')) return; const c=o.cards[o.revealed-1]; if(!c) return;
+  $('gReveal').innerHTML = gCardInfoHtml(c); $('gStrip').innerHTML = gStripHtml(o); $('gTotal').innerHTML = gTotalHtml(o);
+  $('gCount').textContent = `Karta ${o.revealed} z ${o.cards.length}`;
+  const last = o.revealed>=o.cards.length; const b=$('gNextCard'); b.textContent = last ? '📋 Zobrazit souhrn balíčku' : '➡️ Další karta'; b.classList.toggle('secondary', !last);
+}
+function gRenderStage(){
+  const st=G.st, box=$('gStage'); if(!st) return; const set=gSet(); const o=st.open; const price=gPackPrice();
+  if(!o || o.done){
+    box.innerHTML = `<div class="booster" id="gBoosterBtn"><div class="bs">⚡</div><div class="bt">${esc(set.name)}<small>5 karet · 1 holo Pikachu v každém</small></div></div>
+      <button class="btn" id="gBuy" style="max-width:320px">🎁 Koupit a otevřít balíček – ${fmtKc(price)} <span style="opacity:.8;font-weight:500">(${fmtEur(price)})</span></button>
+      <div class="small muted">Zůstatek ${fmtKc(st.balance)} · stačí na ${Math.floor(st.balance/price)} balíčků</div>`;
+    $('gBuy').onclick=gBuyPack; $('gBoosterBtn').onclick=gBuyPack; return;
+  }
+  if(o.revealed>=o.cards.length){   // souhrn otevřeného balíčku
+    const sellVal = o.cards.reduce((a,c)=>a+(gPrice(gById(c.id))||0),0)*(1-(st.fee||0)/100);
+    const bestC = o.cards.slice().sort((a,b)=>(b.eur||0)-(a.eur||0))[0]; const bk=gById(bestC.id);
+    box.innerHTML = `<div class="small muted">Balíček otevřený 🎉</div>
+      <div class="flip on ${gBig(bk.r)?'hit2':gHit(bk.r)?'hit':''}" style="width:170px;height:237px"><div class="in"><div class="b"></div><div class="f"><img src="${gImg(bk)}" alt=""></div></div></div>
+      <div class="reveal">${gCardInfoHtml(bestC)}</div>
+      <div class="strip">${gStripHtml(o)}</div>
+      <div class="ptotal" style="width:100%;max-width:360px">${gTotalHtml(o)}</div>
+      <div class="row" style="width:100%;max-width:360px;margin-top:4px"><button class="btn grow" id="gSellPack">💸 Prodat celý balíček za ${fmtKc(sellVal)}</button></div>
+      <div class="row" style="width:100%;max-width:360px"><button class="btn secondary grow" id="gKeep">📒 Nechat v binderu</button><button class="btn grow" id="gNext" ${st.balance+1e-9<price?'disabled':''}>🎁 Další balíček</button></div>`;
+    $('gSellPack').onclick=()=>{ o.done=true; gSell(o.cards.map(c=>c.uid)); };
+    $('gKeep').onclick=()=>{ o.done=true; gSave(); gRenderAll(); };
+    $('gNext').onclick=()=>{ o.done=true; gBuyPack(); };
+    return;
+  }
+  const next=o.cards[o.revealed], card=gById(next.id);
+  box.innerHTML = `
+    <div class="small muted" id="gCount">Karta ${o.revealed+1} z ${o.cards.length} · klepni na kartu</div>
+    <div class="flip" id="gFlip"><div class="in">
+      <div class="b"><div class="lg">30th</div><div class="sm">Pokémoni · klepni a otoč</div></div>
+      <div class="f"><img src="${gImg(card)}" alt=""></div>
+    </div></div>
+    <div class="reveal" id="gReveal"><div class="muted small">…</div></div>
+    <div class="strip" id="gStrip">${gStripHtml(o)}</div>
+    <div class="ptotal" style="width:100%;max-width:360px" id="gTotal">${gTotalHtml(o)}</div>
+    <button class="btn secondary" id="gNextCard" style="max-width:320px">🃏 Otočit kartu</button>`;
+  const step=()=>{ if(!$('gFlip').classList.contains('on')) gRevealNext(); else { gRenderStage(); $('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}); } };
+  $('gFlip').onclick=step; $('gNextCard').onclick=step;
+}
+/* ---- prodej ---- */
+function gSell(uids){
+  const st=G.st; const set=new Set(uids); let sum=0, n=0; const ids=[];
+  st.inv = st.inv.filter(it=>{ if(!set.has(it.uid)) return true; const p=gPrice(gById(it.id)); if(p==null) return true; sum+=p; n++; ids.push(it.id); return false; });
+  if(!n) return toast('Není co prodat');
+  const net = Math.round(sum*(1-(st.fee||0)/100)*100)/100;
+  st.balance = Math.round((st.balance+net)*100)/100; st.earned += net;
+  gHist({t:'sell', n, eur:net, ids:ids.slice(0,8)});
+  toast(`Prodáno ${n} karet za ${fmtKc(net)} ✔`); gSave(); gRenderAll();
+}
+/* ---- vklad ---- */
+function gOpenDeposit(){
+  openSheet(`<div style="font-weight:700;font-size:18px">💰 Vklad do hry</div><div class="small muted">Fiktivní peníze – jen pro hru. Kurz ${S.rate} Kč/€.</div>
+    <label class="f">Částka (Kč)</label><input id="gDepAmt" type="number" inputmode="numeric" min="1" value="500">
+    <div class="chips">${[200,500,1000,2000,5000].map(v=>`<span class="chip" data-v="${v}">${v} Kč</span>`).join('')}</div>
+    <button class="btn" id="gDepOk">Vložit</button>`);
+  $('sheetBox').querySelectorAll('.chip[data-v]').forEach(ch=>ch.onclick=()=>{ $('gDepAmt').value=ch.dataset.v; });
+  $('gDepOk').onclick=()=>{ const kc=+$('gDepAmt').value||0; if(kc<=0) return toast('Zadej částku'); const eur=Math.round(kc/S.rate*100)/100; G.st.balance=Math.round((G.st.balance+eur)*100)/100; G.st.deposited+=eur; gHist({t:'dep', eur, kc}); closeSheet(); gSave(); gRenderAll(); toast(`Vloženo ${kc} Kč`); };
+}
+/* ---- nastavení hry ---- */
+function gOpenSettings(){
+  const st=G.st;
+  openSheet(`<div style="font-weight:700;font-size:18px">⚙️ Nastavení hry (${esc(G.player)})</div>
+    <label class="f">Cena balíčku (€) <span class="muted">– výchozí ${gSet().packEur} € = Cardmarket trend</span></label><input id="gsPack" type="number" step="0.01" min="0.1" value="${st.packEur||gSet().packEur}">
+    <label class="f">Srážka při prodeji (%) <span class="muted">– 0 = prodej přesně za tržní cenu; reálně bývá poplatek ~5 %</span></label><input id="gsFee" type="number" step="1" min="0" max="50" value="${st.fee||0}">
+    <div style="height:12px"></div><button class="btn" id="gsSave">💾 Uložit</button>
+    <div style="height:8px"></div><button class="btn ghost" id="gsRefresh">🔄 Načíst aktuální ceny karet sady</button>
+    <div style="height:8px"></div><button class="btn ghost" id="gsReset" style="color:var(--accent)">🗑 Resetovat hru hráče ${esc(G.player)}</button>`);
+  $('gsSave').onclick=()=>{ st.packEur=+$('gsPack').value||gSet().packEur; st.fee=Math.max(0,+$('gsFee').value||0); closeSheet(); gSave(); gRenderAll(); toast('Uloženo'); };
+  $('gsRefresh').onclick=async()=>{ $('gsRefresh').innerHTML='<span class="spin"></span> načítám…'; await gPrefetchPrices(true, (a,b)=>{ $('gsRefresh').textContent=`${a}/${b}`; }); closeSheet(); gRenderAll(); };
+  $('gsReset').onclick=()=>{ if(!confirm('Opravdu smazat celou hru hráče '+G.player+' (vklady, karty, historii)?')) return; G.st=gDefault(); closeSheet(); gSave(); gRenderAll(); toast('Hra resetována'); };
+}
+/* ---- šance ---- */
+function gOpenOdds(){
+  const by=gCardsBy(); const set=gSet();
+  const avg=r=>{ const a=by[r].map(gPrice).filter(x=>x!=null); return a.length? a.reduce((x,y)=>x+y,0)/a.length : 0; };
+  const rows=[['PR',1,'každý balíček'],['R',1-HIT_ODDS.reduce((a,[,p])=>a+p,0)+RARE_IN_SLOT3,'≈ 1 z 1,3'],...HIT_ODDS.slice().reverse().map(([r,p])=>[r,p,'1 z '+Math.round(1/p)])];
+  const ev = 2*avg('C') + RARE_IN_SLOT3*avg('R') + (1-RARE_IN_SLOT3)*avg('C') + avg('PR') + HIT_ODDS.reduce((a,[r,p])=>a+p*avg(r),0) + (1-HIT_ODDS.reduce((a,[,p])=>a+p,0))*avg('R');
+  openSheet(`<div style="font-weight:700;font-size:18px">ℹ️ Jak balíček funguje</div>
+    <div class="small muted" style="margin-top:4px">Simulace podle změřených pull rates sady ${esc(set.name)} (PokeBeach/TCGplayer 3 000 balíčků, tcgtalk 652, pullrates.com). Balíček: 2–3 Common, případně Rare, vždy 1 holo Pikachu (30 motivů) a 1 „hit“ slot. Šestá karta (foil energie) se nesimuluje.</div>
+    <table class="odds" style="width:100%;border-collapse:collapse;margin-top:10px"><tr><td><b>Vzácnost</b></td><td><b>Šance</b></td><td><b>Ø cena</b></td></tr>
+    ${rows.map(([r,p,l])=>`<tr><td><span class="rb r-${r}">${RAR[r]}</span> <span class="muted">(${by[r].length})</span></td><td>${(p*100).toFixed(p<0.01?2:1)} %<br><span class="muted small">${l}</span></td><td>${fmtKc(avg(r))}</td></tr>`).join('')}</table>
+    <div class="ptotal"><div><div class="small muted">Průměrná hodnota balíčku</div><div style="font-weight:700">${fmtKc(ev)} <span class="small muted">${fmtEur(ev)}</span></div></div><div style="text-align:right"><div class="small muted">Cena balíčku</div><div style="font-weight:700">${fmtKc(gPackPrice())}</div></div></div>
+    <div class="small muted" style="margin-top:8px">Dlouhodobě tedy balíček vrací ≈ ${Math.round(ev/gPackPrice()*100)} % ceny – jako v reálu. Ceny karet: ${esc(gPriceSrc(by.C[0]))}; jakmile TCGdex doplní Cardmarket trend pro tuto sadu, přepne se na něj automaticky.</div>`);
+}
+/* ---- vykreslení ---- */
+function gRenderAll(){ if(!G.st) return; gRenderPlayers(); gRenderWallet(); gRenderStage(); gRenderInv(); gRenderStats(); gRenderHist(); $('gNote').textContent = `Sada ${gSet().name} (${gSet().abbr}, vydáno ${new Date(gSet().release).toLocaleDateString('cs-CZ')}). Cena boosteru: Cardmarket trend ${gSet().packEur} € (10. 10. 2026). Ceny karet: ${gPriceSrc(gSet().cards[0])}.`; }
+function gRenderPlayers(){ $('gPlayers').innerHTML = S.owners.map(o=>`<span class="chip ${G.player===o?'on':''}" data-p="${esc(o)}">${esc(o)}</span>`).join(''); }
+function gInvValue(){ return G.st.inv.reduce((a,it)=>a+(gPrice(gById(it.id))||0),0); }
+function gRenderWallet(){
+  const st=G.st; const inv=gInvValue(); const net = st.balance + inv - st.deposited;
+  $('gWallet').innerHTML = `<div class="w main"><div class="l">Peněženka · ${esc(G.player)}</div><div class="v">${fmtKc(st.balance)}</div><div class="l">${fmtEur(st.balance)} · vloženo celkem ${fmtKc(st.deposited)}</div></div>
+    <div class="w"><div class="l">Karty v binderu</div><div class="v">${fmtKc(inv)}</div><div class="l">${st.inv.length} karet</div></div>
+    <div class="w"><div class="l">Bilance (peníze + karty − vklady)</div><div class="v ${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmtKc(net)}</div><div class="l">${st.packs} balíčků · utraceno ${fmtKc(st.spent)}</div></div>`;
+}
+function gRenderInv(){
+  const st=G.st; const groups={}; st.inv.forEach(it=>{ (groups[it.id] ||= {c:gById(it.id), n:0, uids:[], ts:0}); groups[it.id].n++; groups[it.id].uids.push(it.uid); groups[it.id].ts=Math.max(groups[it.id].ts,it.ts); });
+  let list=Object.values(groups);
+  if(G.sort==='value') list.sort((a,b)=>(gPrice(b.c)||0)-(gPrice(a.c)||0)); else if(G.sort==='new') list.sort((a,b)=>b.ts-a.ts); else list.sort((a,b)=>String(a.c.n).localeCompare(String(b.c.n),undefined,{numeric:true}));
+  $('gInvInfo').textContent = st.inv.length ? `· ${fmtKc(gInvValue())}` : '';
+  $('gInv').innerHTML = list.length ? list.map(g=>{ const p=gPrice(g.c); return `<div class="gcard" data-gid="${g.c.id}"><img src="${gImg(g.c,'low')}" loading="lazy"><span class="n">${esc(g.c.n)}</span>${g.n>1?`<span class="q">×${g.n}</span>`:''}${gHit(g.c.r)?'<span class="n" style="left:auto;right:4px;top:auto;bottom:22px;background:#b45309">✨</span>':''}<div class="rp">${p!=null?fmtKc(p*g.n):'–'}</div></div>`; }).join('') : '<div class="muted small" style="grid-column:1/-1">Binder je prázdný – kup balíček.</div>';
+  $('gSellAll').style.display = st.inv.length ? '' : 'none';
+}
+function gRenderStats(){
+  const st=G.st; const tot=Object.values(st.pulls).reduce((a,b)=>a+b,0)||0; const packs=st.packs||0;
+  const exp={PR:1, R:(1-HIT_ODDS.reduce((a,[,p])=>a+p,0))+RARE_IN_SLOT3, C:2+(1-RARE_IN_SLOT3)}; HIT_ODDS.forEach(([r,p])=>exp[r]=p);
+  const rows = RAR_ORDER.filter(r=>r!=='C').map(r=>{ const n=st.pulls[r]||0; return `<tr><td><span class="rb r-${r}">${RAR[r]}</span></td><td>${n}×</td><td class="muted">${packs?((n/packs)*100).toFixed(1):'0'} % <span class="small">(čekáno ${(exp[r]*100).toFixed(exp[r]<0.01?2:1)} %)</span></td></tr>`; }).join('');
+  const best = st.best ? gById(st.best.id) : null;
+  $('gStats').innerHTML = `<div class="row" style="margin-bottom:6px"><div class="grow">Balíčků: <b>${packs}</b> · utraceno <b>${fmtKc(st.spent)}</b> · prodáno za <b>${fmtKc(st.earned)}</b></div></div>
+    ${best?`<div class="row" style="margin-bottom:6px"><img src="${gImg(best,'low')}" style="width:46px;border-radius:4px"><div class="grow">🏆 Nejlepší tah: <b>${esc(best.name)}</b> ${esc(best.n)} <span class="rb r-${best.r}">${RAR[best.r]}</span><div class="muted">${fmtKc(st.best.eur)} · ${new Date(st.best.ts).toLocaleDateString('cs-CZ')}</div></div></div>`:''}
+    <table class="odds" style="width:100%;border-collapse:collapse">${rows}</table>`;
+}
+function gRenderHist(){
+  const h=G.st.hist.slice(0,40);
+  $('gHist').innerHTML = h.length ? h.map(e=>{ const d=new Date(e.ts).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
+    if(e.t==='dep') return `<div class="h"><span>${d} · 💰 vklad</span><span class="pos">+${fmtKc(e.eur)}</span></div>`;
+    if(e.t==='pack'){ const best=e.ids.map(gById).sort((a,b)=>RAR_ORDER.indexOf(b.r)-RAR_ORDER.indexOf(a.r))[0]; return `<div class="h"><span>${d} · 🎁 balíček → ${esc(best.name)} <span class="rb r-${best.r}" style="font-size:10px">${RAR[best.r]}</span></span><span>${fmtKc(e.eur)} <span class="muted">/ −${fmtKc(e.price)}</span></span></div>`; }
+    if(e.t==='sell') return `<div class="h"><span>${d} · 💸 prodej ${e.n} karet</span><span class="pos">+${fmtKc(e.eur)}</span></div>`;
+    return ''; }).join('') : '<div class="muted small">Zatím nic.</div>';
+}
+function gOpenCard(id){
+  const c=gById(id); const its=G.st.inv.filter(it=>it.id===id); const p=gPrice(c);
+  openSheet(`<div class="row" style="align-items:flex-start"><img src="${gImg(c)}" style="width:150px;border-radius:8px"><div class="grow"><div class="big" style="font-size:20px">${esc(c.name)}</div><div class="muted small">${esc(gSet().name)} · ${esc(c.n)}</div><div style="margin:6px 0"><span class="rb r-${c.r}">${RAR[c.r]}</span></div><div class="price" style="text-align:left">${fmtKc(p)} <span class="small muted">${fmtEur(p)} / ks</span></div><div class="small muted">${esc(gPriceSrc(c))}</div><div class="small muted" style="margin-top:4px">Máš ${its.length}× (vytaženo ${new Date(its[0].ts).toLocaleDateString('cs-CZ')})</div></div></div>
+    <div style="height:12px"></div><button class="btn" id="gcSell1">💸 Prodat 1 ks za ${fmtKc((p||0)*(1-(G.st.fee||0)/100))}</button>
+    ${its.length>1?`<div style="height:8px"></div><button class="btn secondary" id="gcSellAll">Prodat všech ${its.length} ks za ${fmtKc((p||0)*its.length*(1-(G.st.fee||0)/100))}</button>`:''}
+    <div class="small muted" style="margin-top:10px"><a href="https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(c.name+' 30C '+c.n)}" target="_blank">Cardmarket ↗</a> · <a href="https://www.tcgplayer.com/product/${c.tp}" target="_blank">TCGplayer ↗</a></div>`);
+  $('gcSell1').onclick=()=>{ closeSheet(); gSell([its[0].uid]); };
+  if(its.length>1) $('gcSellAll').onclick=()=>{ closeSheet(); gSell(its.map(i=>i.uid)); };
+}
+/* ---- živé ceny (TCGdex) – max 1× za 20 h, na pozadí ---- */
+async function gPrefetchPrices(force=false, onProgress){
+  const k='pk_game_prices_'+G.set; const last=+localStorage.getItem(k)||0;
+  if(!force && Date.now()-last < PRICE_TTL) return; if(!navigator.onLine) return;
+  const ids=gSet().cards.filter(c=>!c.id.startsWith('tp-')).map(c=>c.id);
+  try{ await fetchPrices(ids, onProgress, force); localStorage.setItem(k, String(Date.now())); }catch(e){}
+  if(S.view==='packs') gRenderAll();
+}
+/* ---- události ---- */
+$('gPlayers').addEventListener('click', e=>{ const ch=e.target.closest('.chip'); if(ch && ch.dataset.p!==G.player) gLoad(ch.dataset.p); });
+$('gDeposit').onclick=gOpenDeposit; $('gOdds').onclick=gOpenOdds; $('gSettings').onclick=gOpenSettings;
+$('gSellAll').onclick=()=>{ const v=gInvValue(); if(!G.st.inv.length) return; if(!confirm(`Prodat všech ${G.st.inv.length} karet za ${fmtKc(v*(1-(G.st.fee||0)/100))}?`)) return; gSell(G.st.inv.map(i=>i.uid)); };
+$('gSellJunk').onclick=()=>{ const u=G.st.inv.filter(it=>{ const p=gPrice(gById(it.id)); return p!=null && p<1; }).map(i=>i.uid); if(!u.length) return toast('Žádné karty pod 1 €'); gSell(u); };
+document.querySelectorAll('#v-packs .chip[data-gs]').forEach(ch=>ch.onclick=()=>{ G.sort=ch.dataset.gs; document.querySelectorAll('#v-packs .chip[data-gs]').forEach(x=>x.classList.toggle('on',x===ch)); gRenderInv(); });
+$('gInv').addEventListener('click', e=>{ const g=e.target.closest('.gcard'); if(g) gOpenCard(g.dataset.gid); });
+async function gEnter(){ if(!G.st){ await gLoad(localStorage.getItem('pk_game_player') || S.owners[0]); } else gRenderAll(); gPrefetchPrices(); }
 
 /* ===================== START ===================== */
 renderPinpad(); $('ver').textContent=APP_VERSION; $('ver2').textContent=APP_VERSION;
