@@ -365,7 +365,7 @@ details[open] summary::before{content:"▾ "}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '4.4';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '4.5';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1269,7 +1269,11 @@ function gRenderInv(){
   const st=G.st; let list=gGroups();
   if(G.sort==='value') list.sort((a,b)=>(gPrice(b.c,b.v)||0)-(gPrice(a.c,a.v)||0)); else if(G.sort==='new') list.sort((a,b)=>b.ts-a.ts); else list.sort((a,b)=>String(a.c.set).localeCompare(String(b.c.set))||String(a.c.n).localeCompare(String(b.c.n),undefined,{numeric:true}));
   $('gInvInfo').textContent = st.inv.length ? `· ${fmtKc(gInvValue())}` : '';
-  $('gInv').innerHTML = list.length ? list.slice(0,400).map(g=>{ const p=gPrice(g.c,g.v); return `<div class="gcard" data-gid="${g.c.id}" data-v="${g.v}">${gImgTag(g.c,'low','loading="lazy"')}<span class="n">${esc(g.c.n)}</span>${g.n>1?`<span class="q">×${g.n}</span>`:''}${g.v==='reverse'?'<span class="n" style="left:auto;right:4px;top:auto;bottom:22px;background:#312e81">RH</span>':gHit(g.c)?'<span class="n" style="left:auto;right:4px;top:auto;bottom:22px;background:#b45309">✨</span>':''}<div class="rp">${p!=null?fmtKc(p*g.n):'–'}</div></div>`; }).join('') + (list.length>400?`<div class="small muted" style="grid-column:1/-1">…a dalších ${list.length-400} druhů karet.</div>`:'') : '<div class="muted small" style="grid-column:1/-1">Binder je prázdný – kup balíček.</div>';
+  const lim = G.invLimit || 15; const shown = list.slice(0, lim);
+  $('gInv').innerHTML = list.length ? shown.map(g=>{ const p=gPrice(g.c,g.v); return `<div class="gcard" data-gid="${g.c.id}" data-v="${g.v}">${gImgTag(g.c,'low','loading="lazy"')}<span class="n">${esc(g.c.n)}</span>${g.n>1?`<span class="q">×${g.n}</span>`:''}${g.v==='reverse'?'<span class="n" style="left:auto;right:4px;top:auto;bottom:22px;background:#312e81">RH</span>':gHit(g.c)?'<span class="n" style="left:auto;right:4px;top:auto;bottom:22px;background:#b45309">✨</span>':''}<div class="rp">${p!=null?fmtKc(p*g.n):'–'}</div></div>`; }).join('') + (list.length>lim?`<div style="grid-column:1/-1;display:flex;gap:8px"><button class="btn secondary grow" id="gInvMore">Další (${Math.min(30,list.length-lim)} z ${list.length-lim})</button>${list.length-lim>30?`<button class="btn secondary" id="gInvAll" style="width:auto">Vše</button>`:''}</div>`:(lim>15&&list.length>15?`<div style="grid-column:1/-1"><button class="btn secondary" id="gInvLess">Sbalit na top 15</button></div>`:'')) : '<div class="muted small" style="grid-column:1/-1">Binder je prázdný – kup balíček.</div>';
+  const more=$('gInvMore'); if(more) more.onclick=()=>{ G.invLimit=lim+30; gRenderInv(); };
+  const all=$('gInvAll'); if(all) all.onclick=()=>{ G.invLimit=Math.min(list.length,600); gRenderInv(); };
+  const less=$('gInvLess'); if(less) less.onclick=()=>{ G.invLimit=15; gRenderInv(); $('gInv').scrollIntoView({block:'start',behavior:'smooth'}); };
   $('gSellAll').style.display = st.inv.length ? '' : 'none';
 }
 /* ---- virtuální sbírka ---- */
@@ -1340,7 +1344,7 @@ $('gPlayers').addEventListener('click', e=>{ const ch=e.target.closest('.chip');
 $('gDeposit').onclick=gOpenDeposit; $('gOdds').onclick=gOpenOdds; $('gSettings').onclick=gOpenSettings;
 $('gSellAll').onclick=()=>{ const v=gInvValue(); if(!G.st.inv.length) return; if(!confirm(`Prodat všech ${gInvCount()} karet za ${fmtKc(v*(1-(G.st.fee||0)/100))}?`)) return; gSell(G.st.inv.map(i=>i.uid)); };
 $('gSellJunk').onclick=()=>{ const u=G.st.inv.filter(it=>{ const p=gPrice(gById(it.id),it.v); return p!=null && p<1; }).map(i=>i.uid); if(!u.length) return toast('Žádné karty pod 1 €'); gSell(u); };
-document.querySelectorAll('#v-packs .chip[data-gs]').forEach(ch=>ch.onclick=()=>{ G.sort=ch.dataset.gs; document.querySelectorAll('#v-packs .chip[data-gs]').forEach(x=>x.classList.toggle('on',x===ch)); gRenderInv(); });
+document.querySelectorAll('#v-packs .chip[data-gs]').forEach(ch=>ch.onclick=()=>{ G.sort=ch.dataset.gs; G.invLimit=15; document.querySelectorAll('#v-packs .chip[data-gs]').forEach(x=>x.classList.toggle('on',x===ch)); gRenderInv(); });
 $('gInv').addEventListener('click', e=>{ const g=e.target.closest('.gcard'); if(g) gOpenCard(g.dataset.gid, g.dataset.v||'normal'); });
 $('gColl').addEventListener('click', e=>{ const s=e.target.closest('.set'); if(s){ const [a,b]=s.dataset.ss.split('|'); gOpenSubset(a,b); } });
 async function gEnter(){ if(!G.playersLoaded){ try{ const l=await rpc('pk_game_list',{}); G.players=(l||[]).map(x=>x.player); G.playersLoaded=true; }catch(e){} }
