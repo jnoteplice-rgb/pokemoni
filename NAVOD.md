@@ -66,3 +66,6 @@ Statické soubory, žádný build. Push do repa → GitHub Pages (branch `main`,
 - Reálný obal boosteru (fotka produktu z TCGplayer CDN), roztržení před první kartou, pak **1 klepnutí = 1 karta**.
 - **Virtuální sbírka**: kompletace sad z herních karet (30th, Classic Collection, Shining Fates, Shiny Vault) ve stejném stylu jako reálné Sady – zelené = máme, šedé = chybí (klepnutí ukáže šanci na kartu).
 - Shining Fates ceny = Cardmarket trend (TCGdex je má), reverse holo = `trend-holo`.
+
+### v3.5 (10. 10. 2026)
+- Třetí sada **Base Set (1999, Unlimited)**: 102 karet, balíček 11 karet (7 C, 3 U, 1 Rare – holo 1 ze 3). Booster 650,17 €, Booster Box (36) 19 021 € = Cardmarket trend. Ceny karet Cardmarket trend (Unlimited).
