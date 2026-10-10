@@ -69,3 +69,9 @@ Statické soubory, žádný build. Push do repa → GitHub Pages (branch `main`,
 
 ### v3.5 (10. 10. 2026)
 - Třetí sada **Base Set (1999, Unlimited)**: 102 karet, balíček 11 karet (7 C, 3 U, 1 Rare – holo 1 ze 3). Booster 650,17 €, Booster Box (36) 19 021 € = Cardmarket trend. Ceny karet Cardmarket trend (Unlimited).
+
+### v3.7 (10. 10. 2026)
+- Celá série Base: **Jungle, Fossil, Base Set 2, Team Rocket** (11 karet, holo 1 ze 3; Team Rocket secret Dark Raichu 1 z 36). Boostery Cardmarket trend: 256 / 380 / 372 / 496 €.
+- **Celebrations (25. výročí)**: 4 holo karty, ~40 % balíčků s Classic Collection kartou, zlatý Mew 1:270. Booster 22,94 €, Mini Tin, Lance's Charizard V Tin, ETB, Collector Chest, Ultra-Premium Collection.
+- Hráči: k vlastníkům sbírky se přidávají hráči z tabulky `pk_game` (Verunka, Lili) + tlačítko ＋ pro nového hráče.
+- Pozor: u WotC sad TCGdex mapuje nehologramové Rare (Jungle 17–32, Fossil 16–30, Team Rocket 18–31, 71, 72, 80) na stejný Cardmarket produkt jako holo verzi → ve hře mají tyto karty cenu TCGplayer Unlimited × 0,9 a živé ceny jsou pro ně vypnuté (`noLive`). Stejná chyba se týká i reálné sbírky (ceny těchto karet jsou v appce nadhodnocené).
