@@ -365,7 +365,7 @@ details[open] summary::before{content:"▾ "}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '4.5';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '4.6';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1027,7 +1027,8 @@ function gMigrate(st){
 }
 function gImg(c, size='high'){ if(!c || !c.img) return ''; return c.img.includes('tcgplayer-cdn') ? c.img : img(c.img, size); }
 function gImgAlt(c){ if(!c || !c.img || !c.img.includes('assets.tcgdex.net')) return ''; const m=c.img.match(/assets\.tcgdex\.net\/en\/[^/]+\/([^/]+)\/([^/]+)$/); if(!m) return ''; const pid=(PTCG_SET[m[1]]||m[1].replace(/\./g,'')); let lid=m[2]; if(/^\d+$/.test(lid)) lid=String(parseInt(lid,10)); return `https://images.pokemontcg.io/${pid}/${lid}.png`; }
-function gImgTag(c, size, extra=''){ const alt=gImgAlt(c); return `<img src="${gImg(c,size)}" ${extra} ${alt?`onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${alt}'}"`:''}>`; }
+function gImgTag(c, size, extra=''){ const alt=gImgAlt(c); const low=(size!=='low' && c && c.img && !c.img.includes('tcgplayer-cdn')) ? img(c.img,'low') : ''; const chain=[low,alt].filter(Boolean); return `<img src="${gImg(c,size)}" ${extra} data-fb="${chain.join('|')}" onerror="gImgErr(this)">`; }
+function gImgErr(el){ const fb=(el.dataset.fb||'').split('|').filter(Boolean); const i=+(el.dataset.fi||0); if(i<fb.length){ el.dataset.fi=i+1; el.src=fb[i]; } else { el.onerror=null; el.style.visibility='hidden'; } }
 function gPrice(c, v='normal'){
   if(!c || c.stub) return null;
   const d = c.noLive ? null : S.cardDetail[c.id]; if(d){ const p = priceFromDetail(d, v); if(p!=null) return p; }
