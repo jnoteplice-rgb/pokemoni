@@ -52,10 +52,17 @@ Reset PINu (SQL editor): `update pk_settings set value = extensions.crypt('NOVYP
 
 Statické soubory, žádný build. Push do repa → GitHub Pages (branch `main`, root). Změna verze SW: v `sw.js` zvedni `pokemoni-v1`.
 
-## Balíčky – hra na otvírání boosterů (v3.2)
+## Balíčky – hra na otvírání boosterů (v3.2–3.3)
 
 - Záložka **Balíčky**: fiktivní peněženka per hráč (Jiří / Jurášek / Společné). Vlož peníze (Kč), kup balíček sady **30th Celebration** (cena = Cardmarket trend boosteru, 12,02 € k 10. 10. 2026, lze změnit v ⚙️).
 - Balíček = 5 karet podle reálných pull rates (2–3 Common, případně Rare, vždy 1 holo Pikachu, 1 „hit“ slot: ex 22 %, Illustration Rare 18 %, Classic Collection 10 %, SIR 5 %, Futuristic Rare 1 %, RGB Mew 1:4000). Karty se otáčí po jedné, cena se ukáže hned.
 - Ceny karet = stejná metrika jako sbírka: Cardmarket trend (přes TCGdex); dokud TCGdex pro sadu Cardmarket nemá, bere se snímek TCGplayer market × 0,9 (10. 10. 2026). Tlačítko „Načíst aktuální ceny“ v ⚙️.
 - Vytažené karty jdou do binderu; prodej jednotlivě, celý balíček nebo „vše pod 1 €“ → peníze zpět do peněženky. Bilance = peníze + hodnota binderu − vklady.
 - Stav hry je v Supabase (tabulka `pk_game`, RPC `pk_game_get` / `pk_game_save` / `pk_game_list`, chráněno PINem) + záloha v localStorage.
+
+### v3.3 (10. 10. 2026)
+- Dvě sady: **30th Celebration** (5 karet) a **Shining Fates** (10 karet, Shiny Vault v reverse slotu). Výběr sady nad balíčkem.
+- **Obchod** (📦): booster, blister, mini tin, poster/pin kolekce, ex box, bundle, ETB, tin, premium kolekce, Ultra-Premium Collection (+ Classic Collection pack se 3 Classic kartami). Ceny = Cardmarket Price Trend 10. 10. 2026. Balíčky z produktu jdou do **fronty neotevřených** a otvírají se postupně (cena balíčku pro bilanci = cena produktu / počet balíčků).
+- Reálný obal boosteru (fotka produktu z TCGplayer CDN), roztržení před první kartou, pak **1 klepnutí = 1 karta**.
+- **Virtuální sbírka**: kompletace sad z herních karet (30th, Classic Collection, Shining Fates, Shiny Vault) ve stejném stylu jako reálné Sady – zelené = máme, šedé = chybí (klepnutí ukáže šanci na kartu).
+- Shining Fates ceny = Cardmarket trend (TCGdex je má), reverse holo = `trend-holo`.
