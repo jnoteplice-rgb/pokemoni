@@ -353,7 +353,7 @@ img.wrap.gone{transform:translateY(-30px) rotate(-6deg) scale(1.05);opacity:0}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '3.5';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '3.6';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1059,10 +1059,8 @@ function gOpenFromPile(cc){   // vezme balíček z fronty a připraví ho k otev
   const k=pileKey(G.set,cc); const p=st.pile[k]; if(!p || p.n<=0) return;
   p.n--; if(p.n<=0) delete st.pile[k];
   const set=gSet(); const cards = gGenPack(G.set, cc ? set.ccPack.slots : null); const ts=Date.now(); st.packs++;
+  // karty se do binderu/statistik/historie zapisují až při otočení – aby je nešlo vidět předem
   st.open = {set:G.set, cc:!!cc, cards, revealed:0, price:Math.round(p.cost*100)/100, ts, torn:false}; gPreload(cards);
-  const pl = (st.pulls[G.set] ||= {});
-  cards.forEach(c=>{ const kk=gById(c.id); pl[kk.r]=(pl[kk.r]||0)+1; st.inv.push({uid:c.uid, id:c.id, set:G.set, v:c.v, ts, packEur:c.eur}); });
-  gHist({t:'pack', cc:!!cc, price:st.open.price, ids:cards.map(c=>c.id), eur:cards.reduce((a,c)=>a+(c.eur||0),0)});
   gSave(); gRenderAll(); setTimeout(()=>$('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}),50);
 }
 function gBuyPack(){   // koupit 1 booster a rovnou ho otevřít
@@ -1082,9 +1080,11 @@ function gRevealNext(){
   el.classList.add('on'); if(gBig(card)) el.classList.add('hit2'); else if(gHit(card)) el.classList.add('hit');
   if(gHit(card) && navigator.vibrate) navigator.vibrate(gBig(card)?[60,40,120]:60);
   o.revealed++;
+  if(!G.st.inv.some(it=>it.uid===c.uid)){ G.st.inv.push({uid:c.uid, id:c.id, set:o.set, v:c.v, ts:o.ts, packEur:c.eur}); const pl=(G.st.pulls[o.set] ||= {}); pl[card.r]=(pl[card.r]||0)+1; }
+  if(o.revealed>=o.cards.length && !o.logged){ o.logged=true; G.st.hist.unshift({ts:Date.now(), set:o.set, t:'pack', cc:!!o.cc, price:o.price, ids:o.cards.map(x=>x.id), eur:o.cards.reduce((a,x)=>a+(x.eur||0),0)}); if(G.st.hist.length>300) G.st.hist.length=300; }
   const best=G.st.best; if(c.eur!=null && (!best || c.eur>best.eur)) G.st.best={id:c.id, v:c.v, eur:c.eur, ts:Date.now()};
   gSave();
-  setTimeout(()=>{ gUpdateReveal(); gRenderWallet(); }, 380);
+  setTimeout(()=>{ gUpdateReveal(); gRenderWallet(); gRenderInv(); gRenderColl(); }, 380);
 }
 function gStripHtml(o){ return o.cards.map((c,j)=>{ const k=gById(c.id); const seen=j<o.revealed; return `<div class="s ${seen?'':'q'} ${seen&&gHit(k)?'hit':''}">${seen?`<img src="${gImg(k,'low')}">`:'<div style="width:52px;aspect-ratio:63/88;border-radius:4px;background:var(--line)"></div>'}${seen?(c.eur!=null?fmtKc(c.eur):'–'):'?'}</div>`; }).join(''); }
 function gTotalHtml(o){ const tot=o.cards.slice(0,o.revealed).reduce((a,c)=>a+(c.eur||0),0); return `<div><div class="small muted">Hodnota balíčku</div><div style="font-weight:700">${fmtKc(tot)} <span class="small muted">${fmtEur(tot)}</span></div></div><div style="text-align:right"><div class="small muted">Zaplaceno ${fmtKc(o.price)}</div><div class="${tot-o.price>=0?'pos':'neg'}" style="font-weight:700">${tot-o.price>=0?'+':''}${fmtKc(tot-o.price)}</div></div>`; }
