@@ -291,7 +291,7 @@ details[open] summary::before{content:"▾ "}
   </div>
   <div class="card">
     <div class="row"><div class="grow" style="font-weight:600">📒 Binder (vytažené karty) <span class="muted small" id="gInvInfo"></span></div><button class="btn small secondary" id="gSellAll">Prodat vše</button></div>
-    <div class="chips" style="margin:8px 0 4px"><span class="chip on" data-gs="value">Nejcennější</span><span class="chip" data-gs="new">Nejnovější</span><span class="chip" data-gs="num">Podle čísla</span><button class="chip" id="gSellJunk">Prodat vše pod 1 €</button></div>
+    <div class="chips" style="margin:8px 0 4px"><span class="chip on" data-gs="value">Nejcennější</span><span class="chip" data-gs="new">Nejnovější</span><span class="chip" data-gs="num">Podle čísla</span><button class="chip" id="gSellJunk">Prodat vše pod 1 €</button><button class="chip" id="gSellDupes">Prodat duplikáty</button></div>
     <div class="grid" id="gInv"></div>
   </div>
   <div class="card">
@@ -365,7 +365,7 @@ details[open] summary::before{content:"▾ "}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '4.6';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '4.7';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1344,6 +1344,19 @@ async function gPrefetchPrices(force=false, onProgress){
 $('gPlayers').addEventListener('click', e=>{ const ch=e.target.closest('.chip'); if(!ch) return; if(ch.dataset.add){ const n=(prompt('Jméno nového hráče:')||'').trim(); if(!n) return; if(!G.players.includes(n)) G.players.push(n); gLoad(n).then(()=>gSave()); return; } if(ch.dataset.p!==G.player) gLoad(ch.dataset.p); });
 $('gDeposit').onclick=gOpenDeposit; $('gOdds').onclick=gOpenOdds; $('gSettings').onclick=gOpenSettings;
 $('gSellAll').onclick=()=>{ const v=gInvValue(); if(!G.st.inv.length) return; if(!confirm(`Prodat všech ${gInvCount()} karet za ${fmtKc(v*(1-(G.st.fee||0)/100))}?`)) return; gSell(G.st.inv.map(i=>i.uid)); };
+function gDupes(){ const seen=new Set(); let n=0, sum=0; G.st.inv.forEach(it=>{ const k=it.id+'|'+it.v; const p=gPrice(gById(it.id),it.v); if(p==null) return; if(!seen.has(k)){ seen.add(k); if(gN(it)>1){ n+=gN(it)-1; sum+=p*(gN(it)-1); } } else { n+=gN(it); sum+=p*gN(it); } }); return {n, sum}; }
+function gSellDupes(){
+  const st=G.st; const keep=new Set(); let sum=0, n=0; const ids=[];
+  st.inv = st.inv.filter(it=>{ const k=it.id+'|'+it.v; const p=gPrice(gById(it.id), it.v); if(p==null){ keep.add(k); return true; }
+    if(!keep.has(k)){ keep.add(k); if(gN(it)>1){ sum+=p*(gN(it)-1); n+=gN(it)-1; ids.push(it.id); it.n=1; } return true; }
+    sum+=p*gN(it); n+=gN(it); ids.push(it.id); return false; });
+  if(!n) return toast('Žádné duplikáty k prodeji');
+  const net = Math.round(sum*(1-(st.fee||0)/100)*100)/100;
+  st.balance = Math.round((st.balance+net)*100)/100; st.earned += net;
+  gHist({t:'sell', n, eur:net, ids:[...new Set(ids)].slice(0,8)});
+  toast(`Prodáno ${n} duplikátů za ${fmtKc(net)} ✔ – od každé karty zůstal 1 kus`); gSave(); gRenderAll();
+}
+$('gSellDupes').onclick=()=>{ const d=gDupes(); if(!d.n) return toast('Žádné duplikáty – od každé karty máš jen 1 kus'); if(!confirm(`Prodat ${d.n} duplikátů za ${fmtKc(d.sum*(1-(G.st.fee||0)/100))}?\nOd každé karty (a varianty) zůstane v binderu 1 kus.`)) return; gSellDupes(); };
 $('gSellJunk').onclick=()=>{ const u=G.st.inv.filter(it=>{ const p=gPrice(gById(it.id),it.v); return p!=null && p<1; }).map(i=>i.uid); if(!u.length) return toast('Žádné karty pod 1 €'); gSell(u); };
 document.querySelectorAll('#v-packs .chip[data-gs]').forEach(ch=>ch.onclick=()=>{ G.sort=ch.dataset.gs; G.invLimit=15; document.querySelectorAll('#v-packs .chip[data-gs]').forEach(x=>x.classList.toggle('on',x===ch)); gRenderInv(); });
 $('gInv').addEventListener('click', e=>{ const g=e.target.closest('.gcard'); if(g) gOpenCard(g.dataset.gid, g.dataset.v||'normal'); });
