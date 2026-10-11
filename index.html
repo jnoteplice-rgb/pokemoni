@@ -10,6 +10,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
+/* --- rozbalovačka v5: balíček jako stoh, 1 klepnutí = další karta --- */
+.deck{position:relative;width:230px;height:321px}
+.deck .flip{position:absolute;inset:0}
+.deck .dk{position:absolute;inset:0;border-radius:12px;background:radial-gradient(circle at 50% 40%,#3b82f6 0,#1e3a8a 45%,#0f172a 100%);border:6px solid #e2e8f0;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.deck .dk1{transform:translate(5px,6px) rotate(1.5deg)}
+.deck .dk2{transform:translate(10px,12px) rotate(-2deg);opacity:.8}
+.flip.fly .in{transition:transform .24s ease-in,opacity .24s ease-in;transform:rotateY(180deg) translateY(190px) scale(.28);opacity:0}
+.flip.tease .in{animation:tease .65s ease-in-out}
+.flip.tease .b{box-shadow:0 0 0 4px #fde68a,0 0 34px 10px rgba(250,204,21,.65)}
+@keyframes tease{0%{transform:rotateY(0) scale(1)}25%{transform:rotateY(-28deg) scale(1.04)}50%{transform:rotateY(22deg) scale(1.06)}75%{transform:rotateY(-14deg) scale(1.04)}100%{transform:rotateY(0) scale(1)}}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.confetti i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:cf linear forwards}
+@keyframes cf{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(420px) rotate(720deg);opacity:0}}
+.stage{overflow:hidden}
+
 /* bez zoomu dvojklepnutím (iOS) – rychlé klepání při otvírání balíčků */
 html,body,button,.chip,.flip,.strip,.gcard,.card,.stage{touch-action:manipulation}
 
@@ -368,7 +383,7 @@ details[open] summary::before{content:"▾ "}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '4.10';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '5.0';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1136,12 +1151,17 @@ function gOpenPicker(){
   setTimeout(()=>$('gPickQ').focus(), 50);
 }
 /* ---- otvírání ---- */
+function gFlipInner(o, c, card){ return `<div class="in"><div class="b"><div class="lg">${esc(gSet(o.set).abbr)}</div><div class="sm">Pokémoni · klepni a otoč</div></div><div class="f">${gImgTag(card,'high')}</div></div>`; }
+function gDeckHtml(o){ const left=o.cards.length-o.revealed-1; return (left>1?'<div class="dk dk2"></div>':'')+(left>0?'<div class="dk dk1"></div>':''); }
+function gConfetti(big){ const host=$('gStage'); if(!host) return; const n=big?70:36; const cols=['#f59e0b','#ef4444','#3b82f6','#10b981','#a855f7','#f472b6','#fde047']; const box=document.createElement('div'); box.className='confetti'; for(let i=0;i<n;i++){ const s=document.createElement('i'); s.style.left=(Math.random()*100)+'%'; s.style.background=cols[i%cols.length]; s.style.animationDelay=(Math.random()*.4)+'s'; s.style.animationDuration=(1+Math.random()*.9)+'s'; s.style.transform=`rotate(${Math.random()*360}deg)`; s.style.width=(6+Math.random()*6)+'px'; box.appendChild(s); } host.appendChild(box); setTimeout(()=>box.remove(), 2200); }
 function gRevealNext(){
   const o=G.st?.open; if(!o || o.revealed>=o.cards.length) return;
   const el=$('gFlip'); if(!el || el.classList.contains('on')) return;
   const c=o.cards[o.revealed], card=gById(c.id);
+  if(gHit(card) && !el.dataset.teased){ el.dataset.teased=1; el.classList.add('tease'); if(navigator.vibrate) navigator.vibrate(25); setTimeout(()=>{ el.classList.remove('tease'); gRevealNext(); }, 650); return; }
   el.classList.add('on'); if(gBig(card)) el.classList.add('hit2'); else if(gHit(card)) el.classList.add('hit');
   if(gHit(card) && navigator.vibrate) navigator.vibrate(gBig(card)?[60,40,120]:60);
+  if(gHit(card)) setTimeout(()=>gConfetti(gBig(card)), 350);
   o.revealed++;
   if(!G.st.inv.some(it=>it.uid===c.uid)){ c.isNew = !G.st.inv.some(it=>it.id===c.id); G.st.inv.push({uid:c.uid, id:c.id, set:o.set, v:c.v, ts:o.ts, packEur:c.eur}); const pl=(G.st.pulls[o.set] ||= {}); pl[card.r]=(pl[card.r]||0)+1; }
   if(o.revealed>=o.cards.length && !o.logged){ o.logged=true; if(G.st.packsBy){ G.st.packsBy[o.set]=(G.st.packsBy[o.set]||0)+1; } G.st.hist.unshift({ts:Date.now(), set:o.set, t:'pack', cc:!!o.cc, price:o.price, ids:o.cards.map(x=>x.id), eur:o.cards.reduce((a,x)=>a+(x.eur||0),0), nw:o.cards.filter(x=>x.isNew).length}); if(G.st.hist.length>300) G.st.hist.length=300; }
@@ -1158,7 +1178,7 @@ function gCardInfoHtml(c){ const card=gById(c.id);
 function gUpdateReveal(){
   const o=G.st?.open; if(!o || !$('gReveal')) return; const c=o.cards[o.revealed-1]; if(!c) return;
   $('gReveal').innerHTML = gCardInfoHtml(c); $('gStrip').innerHTML = gStripHtml(o); $('gTotal').innerHTML = gTotalHtml(o);
-  $('gCount').textContent = `Karta ${o.revealed} z ${o.cards.length} · klepni pro další`;
+  $('gCount').textContent = o.revealed>=o.cards.length ? `Poslední karta · klepni pro souhrn` : `Karta ${o.revealed} z ${o.cards.length} · klepni pro další`;
   const last = o.revealed>=o.cards.length; const b=$('gNextCard'); b.textContent = last ? '📋 Zobrazit souhrn balíčku' : '➡️ Další karta'; b.classList.toggle('secondary', !last);
 }
 function gSetHeaderHtml(){ const m=gSet(); return `<div class="sethead" id="gSetHead"><img src="${m.logo?m.logo+'.webp':''}" onerror="this.style.display='none'"><div class="grow"><div style="font-weight:700">${esc(m.name)}</div><div class="small muted">${esc(m.serieName)} · ${gYear(m)} · ${m.count} karet</div></div><button class="btn small secondary" id="gPickBtn">Změnit sadu</button></div>`; }
@@ -1205,15 +1225,19 @@ function gRenderStage(){
   const next=o.cards[o.revealed], card=gById(next.id);
   box.innerHTML = `
     <div class="small muted" id="gCount">Karta ${o.revealed+1} z ${o.cards.length} · klepni na kartu</div>
-    <div class="flip" id="gFlip"><div class="in">
-      <div class="b"><div class="lg">${esc(gSet(o.set).abbr)}</div><div class="sm">Pokémoni · klepni a otoč</div></div>
-      <div class="f">${gImgTag(card,'high')}</div>
-    </div></div>
+    <div class="deck" id="gDeck">${gDeckHtml(o)}<div class="flip" id="gFlip">${gFlipInner(o, next, card)}</div></div>
     <div class="reveal" id="gReveal"><div class="muted small">…</div></div>
     <div class="strip" id="gStrip">${gStripHtml(o)}</div>
     <div class="ptotal" style="width:100%;max-width:360px" id="gTotal">${gTotalHtml(o)}</div>
     <button class="btn secondary" id="gNextCard" style="max-width:320px">🃏 Otočit kartu</button>`;
-  const step=()=>{ const f=$('gFlip'); if(!f.classList.contains('on')) gRevealNext(); else { gRenderStage(); if(G.st.open.revealed<G.st.open.cards.length){ requestAnimationFrame(()=>setTimeout(gRevealNext, 120)); } else $('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}); } };
+  const step=()=>{ const f=$('gFlip'); const oo=G.st.open; if(!f || G.busy) return;
+    if(!f.classList.contains('on')) return gRevealNext();
+    if(oo.revealed>=oo.cards.length){ gRenderStage(); $('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    G.busy=true; f.classList.add('fly');
+    setTimeout(()=>{ const n=oo.cards[oo.revealed], k=gById(n.id); const inn=f.querySelector('.in'); if(inn) inn.style.transition='none'; f.className='flip'; delete f.dataset.teased; f.innerHTML=gFlipInner(oo, n, k); void f.offsetWidth;
+      const dk=$('gDeck'); if(dk){ dk.querySelectorAll('.dk').forEach(x=>x.remove()); dk.insertAdjacentHTML('afterbegin', gDeckHtml(oo)); }
+      $('gCount').textContent=`Karta ${oo.revealed+1} z ${oo.cards.length}`; G.busy=false; requestAnimationFrame(()=>setTimeout(gRevealNext,60)); }, 240);
+  };
   $('gFlip').onclick=step; $('gNextCard').onclick=step;
 }
 /* ---- prodej ---- */
