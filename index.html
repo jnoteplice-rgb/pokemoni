@@ -383,7 +383,7 @@ details[open] summary::before{content:"▾ "}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '5.0';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '5.1';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1112,7 +1112,7 @@ async function gOpenFromPile(cc){
   p.n--; if(p.n<=0) delete st.pile[k];
   const set=gSet(); const cards = gGenPack(G.set, cc ? set.ccPack.slots : null); const ts=Date.now(); st.packs++;
   st.open = {set:G.set, cc:!!cc, cards, revealed:0, price:Math.round(p.cost*100)/100, ts, torn:false}; gPreload(cards);
-  gSave(); gRenderAll(); setTimeout(()=>$('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}),50);
+  gSave(); gRenderAll(); setTimeout(()=>gScrollStage(),50);
 }
 async function gFastNext(){
   const st=G.st; const before=st.open;
@@ -1154,6 +1154,7 @@ function gOpenPicker(){
 function gFlipInner(o, c, card){ return `<div class="in"><div class="b"><div class="lg">${esc(gSet(o.set).abbr)}</div><div class="sm">Pokémoni · klepni a otoč</div></div><div class="f">${gImgTag(card,'high')}</div></div>`; }
 function gDeckHtml(o){ const left=o.cards.length-o.revealed-1; return (left>1?'<div class="dk dk2"></div>':'')+(left>0?'<div class="dk dk1"></div>':''); }
 function gConfetti(big){ const host=$('gStage'); if(!host) return; const n=big?70:36; const cols=['#f59e0b','#ef4444','#3b82f6','#10b981','#a855f7','#f472b6','#fde047']; const box=document.createElement('div'); box.className='confetti'; for(let i=0;i<n;i++){ const s=document.createElement('i'); s.style.left=(Math.random()*100)+'%'; s.style.background=cols[i%cols.length]; s.style.animationDelay=(Math.random()*.4)+'s'; s.style.animationDuration=(1+Math.random()*.9)+'s'; s.style.transform=`rotate(${Math.random()*360}deg)`; s.style.width=(6+Math.random()*6)+'px'; box.appendChild(s); } host.appendChild(box); setTimeout(()=>box.remove(), 2200); }
+function gScrollStage(){ const el=$('gStageCard'); if(!el) return; const hd=document.querySelector('header'); el.style.scrollMarginTop=((hd?hd.offsetHeight:0)+8)+'px'; el.scrollIntoView({behavior:'smooth',block:'start'}); }
 function gRevealNext(){
   const o=G.st?.open; if(!o || o.revealed>=o.cards.length) return;
   const el=$('gFlip'); if(!el || el.classList.contains('on')) return;
@@ -1232,7 +1233,7 @@ function gRenderStage(){
     <button class="btn secondary" id="gNextCard" style="max-width:320px">🃏 Otočit kartu</button>`;
   const step=()=>{ const f=$('gFlip'); const oo=G.st.open; if(!f || G.busy) return;
     if(!f.classList.contains('on')) return gRevealNext();
-    if(oo.revealed>=oo.cards.length){ gRenderStage(); $('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    if(oo.revealed>=oo.cards.length){ gRenderStage(); gScrollStage(); return; }
     G.busy=true; f.classList.add('fly');
     setTimeout(()=>{ const n=oo.cards[oo.revealed], k=gById(n.id); const inn=f.querySelector('.in'); if(inn) inn.style.transition='none'; f.className='flip'; delete f.dataset.teased; f.innerHTML=gFlipInner(oo, n, k); void f.offsetWidth;
       const dk=$('gDeck'); if(dk){ dk.querySelectorAll('.dk').forEach(x=>x.remove()); dk.insertAdjacentHTML('afterbegin', gDeckHtml(oo)); }
