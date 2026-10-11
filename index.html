@@ -368,7 +368,7 @@ details[open] summary::before{content:"▾ "}
 
 <script>
 /* ===================== KONFIGURACE ===================== */
-const APP_VERSION = '4.9';   // při každé změně zvednout (a stejně v sw.js)
+const APP_VERSION = '4.10';   // při každé změně zvednout (a stejně v sw.js)
 const SUPA_URL = 'https://dltopsftcmkxqrcobgrc.supabase.co';
 const SUPA_KEY = 'sb_publishable_oP_ubtkXh67aMvh2gfWZ4w_Sz9_uOG2';
 const TCGDEX = 'https://api.tcgdex.net/v2';
@@ -1099,6 +1099,13 @@ async function gOpenFromPile(cc){
   st.open = {set:G.set, cc:!!cc, cards, revealed:0, price:Math.round(p.cost*100)/100, ts, torn:false}; gPreload(cards);
   gSave(); gRenderAll(); setTimeout(()=>$('gStageCard').scrollIntoView({behavior:'smooth',block:'start'}),50);
 }
+async function gFastNext(){
+  const st=G.st; const before=st.open;
+  if(gPileCount(G.set,false)>0){ await gOpenFromPile(false); }
+  else { const prod=gSet().products.find(p=>p.id==='booster'); if(!prod) return toast('Tahle sada nemá booster v nabídce'); const n0=gPileCount(G.set,false); gBuyProduct(prod); if(gPileCount(G.set,false)<=n0) return gRenderAll(); await gOpenFromPile(false); }
+  const o=st.open; if(!o || o===before || o.torn) return;
+  o.torn=true; gRenderStage(); requestAnimationFrame(()=>setTimeout(gRevealNext,150));
+}
 function gBuyPack(){
   const st=G.st; if(st.open && !st.open.done && st.open.revealed < st.open.cards.length) return toast('Nejdřív dootvírej rozdělaný balíček');
   const prod=gSet().products.find(p=>p.id==='booster'); if(!prod) return toast('Tahle sada nemá booster v nabídce');
@@ -1174,7 +1181,7 @@ function gRenderStage(){
     const bestI = o.cards.reduce((bi,c,i,arr)=>(c.eur||0)>(arr[bi].eur||0)?i:bi,0); const selI = (G.packSel!=null && G.packSel<o.cards.length) ? G.packSel : bestI; const bestC=o.cards[selI]; const bk=gById(bestC.id);
     const more = gPileCount(o.set,false)>0; const nw=o.cards.filter(c=>c.isNew).length;
     box.innerHTML = `<div class="small muted">${o.cc?'Classic Collection pack':'Balíček '+esc(gSet(o.set).name)} otevřený 🎉${nw?` · ${nw} ${nw===1?'nová karta':nw<5?'nové karty':'nových karet'} do sbírky`:''}</div>
-      <div class="flip on ${gBig(bk)?'hit2':gHit(bk)?'hit':''}" style="width:170px;height:237px"><div class="in"><div class="b"></div><div class="f">${gImgTag(bk,'high')}</div></div></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;width:100%"><div style="width:48px"></div><div class="flip on ${gBig(bk)?'hit2':gHit(bk)?'hit':''}" style="width:170px;height:237px"><div class="in"><div class="b"></div><div class="f">${gImgTag(bk,'high')}</div></div></div><button class="btn" id="gFast" title="Kup a otevři další balíček" style="width:48px;height:64px;padding:0;font-size:22px;border-radius:14px" ${!more && st.balance+1e-9<price?'disabled':''}>⏩</button></div>
       <div class="reveal">${gCardInfoHtml(bestC)}</div>
       <div class="small muted">${selI===bestI?'Nejlepší karta balíčku · klepni dole na jinou':'Klepni dole na jinou kartu'}</div>
       <div class="strip">${gStripHtml(o)}</div>
@@ -1184,6 +1191,7 @@ function gRenderStage(){
     $('gSellPack').onclick=()=>{ o.done=true; G.packSel=null; gSell(o.cards.map(c=>c.uid)); };
     $('gKeep').onclick=()=>{ o.done=true; G.packSel=null; gSave(); gRenderAll(); };
     $('gNext').onclick=()=>{ o.done=true; G.packSel=null; if(more) gOpenFromPile(false); else gBuyPack(); };
+    $('gFast').onclick=()=>{ o.done=true; G.packSel=null; gFastNext(); };
     return;
   }
   if(!o.torn && o.revealed===0){
